@@ -138,16 +138,14 @@ namespace IntelliCoreToolbox
             // 🔥 Step 5: 定义可拖拽区域 - 在窗口激活后执行
             this.Activated += MainWindow_Activated;
             
-            // 导航到主页面
-            ContentFrame.Navigate(typeof(IntelliCoreToolbox.Views.HomePage));
-            
             // 添加导航完成事件处理，确保新页面也应用主题
             ContentFrame.Navigated += ContentFrame_Navigated;
             
             // 初始化主题
             ApplyTheme(_lightTheme, "白色");
             
-            // 初始化默认页面为HomePage，不设置任何按钮为激活状态
+            // 导航到主页面（不设置任何按钮为激活状态，因为HomePage是独立的）
+            ContentFrame.Navigate(typeof(IntelliCoreToolbox.Views.HomePage));
         }
 
         private void MainWindow_Activated(object sender, WindowActivatedEventArgs e)
@@ -340,6 +338,12 @@ namespace IntelliCoreToolbox
         // 🎯 导航和状态管理方法
         private void NavigateToPage(Type pageType, Button activeButton)
         {
+            // 如果点击的是当前已激活的按钮，不做任何操作
+            if (activeButton == _currentActiveButton)
+            {
+                return;
+            }
+            
             // 导航到指定页面
             ContentFrame.Navigate(pageType);
             
@@ -379,10 +383,10 @@ namespace IntelliCoreToolbox
             else
             {
                 // 默认状态：透明背景，侧边栏前景色
-                                 button.Background = new SolidColorBrush(Colors.Transparent);
-                 button.Foreground = new SolidColorBrush(currentTheme.SidebarButtonForeground);
-             }
-         }
+                button.Background = new SolidColorBrush(Colors.Transparent);
+                button.Foreground = new SolidColorBrush(currentTheme.SidebarButtonForeground);
+            }
+        }
 
          // 🎨 更新页面主题元素
          private void UpdatePageThemeElements(Page page, ThemeColors theme)

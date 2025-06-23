@@ -90,45 +90,7 @@
                                 Background="Transparent"
                                 BorderThickness="0"
                                 Foreground="#E0E0E0"
-                                FontSize="14">
-                            <Button.Resources>
-                                <Style TargetType="Button">
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="Button">
-                                                <Border x:Name="RootBorder" 
-                                                       Background="{TemplateBinding Background}"
-                                                       CornerRadius="6"
-                                                       Padding="{TemplateBinding Padding}">
-                                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                                                    <VisualStateManager.VisualStateGroups>
-                                                        <VisualStateGroup x:Name="CommonStates">
-                                                            <VisualState x:Name="Normal"/>
-                                                            <VisualState x:Name="PointerOver">
-                                                                <Storyboard>
-                                                                    <ColorAnimation Storyboard.TargetName="RootBorder"
-                                                                                  Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                                  To="#3A3A3C" Duration="0:0:0.2"/>
-                                                                </Storyboard>
-                                                            </VisualState>
-                                                            <VisualState x:Name="Pressed">
-                                                                <Storyboard>
-                                                                    <ColorAnimation Storyboard.TargetName="RootBorder"
-                                                                                  Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                                  To="#007ACC" Duration="0:0:0.1"/>
-                                                                </Storyboard>
-                                                            </VisualState>
-                                                        </VisualStateGroup>
-                                                    </VisualStateManager.VisualStateGroups>
-                                                </Border>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </Button.Resources>
-                        </Button>
+                                FontSize="14"/>
                         
                         <!-- 分割线 -->
                         <Rectangle Height="1" 
