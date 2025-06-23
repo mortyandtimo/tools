@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "IntelliCoreToolbox (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "IntelliCoreToolbox (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
