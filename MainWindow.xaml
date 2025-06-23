@@ -5,7 +5,220 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:IntelliCoreToolbox.Views">
 
-    <Grid Background="LightBlue" Margin="0" Padding="0">
-        <Frame x:Name="MainFrame" NavigationFailed="OnNavigationFailed"/>
+    <Grid x:Name="RootGrid" Background="LightBlue">
+        <Grid.RowDefinitions>
+            <!-- 标题栏区域 -->
+            <RowDefinition Height="32"/>
+            <!-- 主内容区域 -->
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 🎯 自定义标题栏区域 -->
+        <Grid x:Name="TitleBarArea" Grid.Row="0" Background="Transparent">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="46"/> <!-- 预留关闭按钮宽度 -->
+            </Grid.ColumnDefinitions>
+            
+            <!-- 软件名、版本和主题切换按钮 -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0">
+                <TextBlock x:Name="AppNameText" 
+                          Text="IntelliCore Toolbox" 
+                          FontSize="14" 
+                          FontWeight="SemiBold"
+                          VerticalAlignment="Center"
+                          Foreground="DarkSlateGray"/>
+                <TextBlock x:Name="AppVersionText" 
+                          Text="v1.0.0" 
+                          FontSize="11" 
+                          Opacity="0.7"
+                          VerticalAlignment="Center"
+                          Margin="8,0,0,0"
+                          Foreground="DarkSlateGray"/>
+                          
+                <!-- 主题切换按钮 -->
+                <Button x:Name="ThemeToggleButton" 
+                        Click="OnThemeToggleClicked"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Width="28" 
+                        Height="28"
+                        VerticalAlignment="Center"
+                        Margin="12,0,0,0"
+                        Padding="2"
+                        ToolTipService.ToolTip="切换主题">
+                    <FontIcon x:Name="ThemeIcon" 
+                             FontFamily="Segoe MDL2 Assets" 
+                             Glyph="&#xE771;" 
+                             FontSize="14"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center"
+                             Foreground="DarkSlateGray"/>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- 🎯 主内容区域 -->
+        <Grid Grid.Row="1">
+            <!-- 定义两列：侧边栏和主内容区 -->
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>  <!-- 侧边栏适中宽度 -->
+                <ColumnDefinition Width="*"/>    <!-- 主内容区自动填充剩余空间 -->
+            </Grid.ColumnDefinitions>
+
+            <!-- 美化的侧边栏 -->
+            <Grid Grid.Column="0" x:Name="SidebarGrid" Background="#2D2D30">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- 主导航区域 -->
+                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Orientation="Vertical" Margin="0,16,0,16">
+                        
+                        <!-- 搜索按钮 -->
+                        <Button x:Name="SearchButton" 
+                                Content="🔍 搜索"
+                                Click="SearchButton_Click"
+                                ToolTipService.ToolTip="搜索"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                Margin="16,4,16,4"
+                                Padding="16,12"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="#E0E0E0"
+                                FontSize="14">
+                            <Button.Resources>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="RootBorder" 
+                                                       Background="{TemplateBinding Background}"
+                                                       CornerRadius="6"
+                                                       Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                                    <VisualStateManager.VisualStateGroups>
+                                                        <VisualStateGroup x:Name="CommonStates">
+                                                            <VisualState x:Name="Normal"/>
+                                                            <VisualState x:Name="PointerOver">
+                                                                <Storyboard>
+                                                                    <ColorAnimation Storyboard.TargetName="RootBorder"
+                                                                                  Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                                  To="#3A3A3C" Duration="0:0:0.2"/>
+                                                                </Storyboard>
+                                                            </VisualState>
+                                                            <VisualState x:Name="Pressed">
+                                                                <Storyboard>
+                                                                    <ColorAnimation Storyboard.TargetName="RootBorder"
+                                                                                  Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                                                  To="#007ACC" Duration="0:0:0.1"/>
+                                                                </Storyboard>
+                                                            </VisualState>
+                                                        </VisualStateGroup>
+                                                    </VisualStateManager.VisualStateGroups>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                        
+                        <!-- 分割线 -->
+                        <Rectangle Height="1" 
+                                  Fill="#404040" 
+                                  Margin="16,12,16,12"/>
+                        
+                        <!-- 应用中心 -->
+                        <Button x:Name="AppCenterButton" 
+                                Content="📦 应用中心"
+                                Click="AppCenterButton_Click"
+                                ToolTipService.ToolTip="应用中心"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                Margin="16,4,16,4"
+                                Padding="16,12"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="#E0E0E0"
+                                FontSize="14"/>
+                        
+                        <!-- 片段 -->
+                        <Button x:Name="SnippetsButton" 
+                                Content="📄 片段"
+                                Click="SnippetsButton_Click"
+                                ToolTipService.ToolTip="代码片段"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                Margin="16,4,16,4"
+                                Padding="16,12"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="#E0E0E0"
+                                FontSize="14"/>
+                        
+                        <!-- 快捷键管理 -->
+                        <Button x:Name="HotkeysButton" 
+                                Content="⌨️ 快捷键管理"
+                                Click="HotkeysButton_Click"
+                                ToolTipService.ToolTip="快捷键管理"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                Margin="16,4,16,4"
+                                Padding="16,12"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="#E0E0E0"
+                                FontSize="14"/>
+                        
+                        <!-- 分割线 -->
+                        <Rectangle Height="1" 
+                                  Fill="#404040" 
+                                  Margin="16,12,16,12"/>
+                        
+                        <!-- 设置 -->
+                        <Button x:Name="SettingsButton" 
+                                Content="⚙️ 设置"
+                                Click="SettingsButton_Click"
+                                ToolTipService.ToolTip="设置"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                Margin="16,4,16,4"
+                                Padding="16,12"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="#E0E0E0"
+                                FontSize="14"/>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- 底部状态区域 -->
+                <StackPanel Grid.Row="1" Margin="16,8,16,16">
+                    <Rectangle Height="1" Fill="#404040" Margin="0,0,0,8"/>
+                    <TextBlock x:Name="ThemeStatusText"
+                              Text="当前主题: 浅色"
+                              FontSize="12"
+                              Foreground="#B0B0B0"
+                              HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- 主内容区 -->
+            <Border Grid.Column="1" 
+                    Background="White"
+                    CornerRadius="8,0,0,0"
+                    BorderBrush="#E0E0E0"
+                    BorderThickness="1,1,0,0">
+                <Frame x:Name="ContentFrame" 
+                       NavigationFailed="OnNavigationFailed"
+                       Margin="0"/>
+            </Border>
+        </Grid>
     </Grid>
 </Window> 

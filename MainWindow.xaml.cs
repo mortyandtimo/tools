@@ -1,6 +1,9 @@
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
+using System;
 using WinRT.Interop;
 using Windows.UI;
 
@@ -9,7 +12,38 @@ namespace IntelliCoreToolbox
     public sealed partial class MainWindow : Window
     {
         private AppWindow? _appWindow;
+        private bool _isDarkTheme = false;
+        private Button? _currentActiveButton = null;
         
+        // 🎨 主题颜色定义
+        private readonly ThemeColors _lightTheme = new ThemeColors
+        {
+            PageBackground = Color.FromArgb(255, 250, 250, 250),   // 主界面：白色系
+            TextForeground = Colors.DarkSlateGray,
+            ButtonBackground = Colors.DodgerBlue,
+            ButtonBackgroundHover = Colors.RoyalBlue,
+            ButtonBackgroundPressed = Colors.MediumBlue,
+            ButtonForeground = Colors.White,
+            ThemeIconColor = Colors.DarkSlateGray,
+            SidebarBackground = Color.FromArgb(255, 240, 240, 240), // 侧边栏：浅灰色
+            SidebarButtonForeground = Color.FromArgb(255, 80, 80, 80),
+            TitleBarBackground = Color.FromArgb(255, 230, 230, 230) // 标题栏：更浅的灰色
+        };
+
+        private readonly ThemeColors _darkTheme = new ThemeColors
+        {
+            PageBackground = Color.FromArgb(255, 55, 55, 58),      // 主界面：原来的浅色（灰色系）
+            TextForeground = Colors.LightGray,
+            ButtonBackground = Colors.Orange,
+            ButtonBackgroundHover = Colors.DarkOrange,
+            ButtonBackgroundPressed = Colors.OrangeRed,
+            ButtonForeground = Colors.Black,
+            ThemeIconColor = Colors.LightGray,
+            SidebarBackground = Color.FromArgb(255, 45, 45, 48),   // 侧边栏：中间灰色
+            SidebarButtonForeground = Color.FromArgb(255, 224, 224, 224),
+            TitleBarBackground = Color.FromArgb(255, 35, 35, 38)   // 标题栏：比侧边栏略深的灰色
+        };
+
         // 主题颜色数据结构（与MainPage保持一致）
         public class ThemeColors
         {
@@ -20,6 +54,9 @@ namespace IntelliCoreToolbox
             public Color ButtonBackgroundPressed { get; set; }
             public Color ButtonForeground { get; set; }
             public Color ThemeIconColor { get; set; }
+            public Color SidebarBackground { get; set; }
+            public Color SidebarButtonForeground { get; set; }
+            public Color TitleBarBackground { get; set; }
         }
 
         public MainWindow()
@@ -34,12 +71,20 @@ namespace IntelliCoreToolbox
 
             if (_appWindow != null)
             {
-                // 🔥 Step 2: 隐藏最小化和最大化按钮，只保留关闭按钮
+                // 🔥 Step 2: 隐藏最小化和最大化按钮，只保留关闭按钮，禁用双击全屏
                 if (_appWindow.Presenter is OverlappedPresenter presenter)
                 {
                     presenter.IsMinimizable = false;  // 隐藏最小化按钮
                     presenter.IsMaximizable = false;  // 隐藏最大化按钮
                     presenter.IsResizable = true;     // 保持窗口可调整大小
+                    
+                    // 禁用双击标题栏全屏/还原功能
+                    try
+                    {
+                        // 通过设置最大化状态为禁用来阻止双击全屏
+                        presenter.SetBorderAndTitleBar(true, true);
+                    }
+                    catch { /* 忽略可能的异常 */ }
                 }
 
                 // 🔥 Step 3 & 4: 标题栏透明化 + 深度自定义关闭按钮颜色
@@ -94,7 +139,15 @@ namespace IntelliCoreToolbox
             this.Activated += MainWindow_Activated;
             
             // 导航到主页面
-            MainFrame.Navigate(typeof(IntelliCoreToolbox.Views.MainPage));
+            ContentFrame.Navigate(typeof(IntelliCoreToolbox.Views.HomePage));
+            
+            // 添加导航完成事件处理，确保新页面也应用主题
+            ContentFrame.Navigated += ContentFrame_Navigated;
+            
+            // 初始化主题
+            ApplyTheme(_lightTheme, "白色");
+            
+            // 初始化默认页面为HomePage，不设置任何按钮为激活状态
         }
 
         private void MainWindow_Activated(object sender, WindowActivatedEventArgs e)
@@ -107,6 +160,8 @@ namespace IntelliCoreToolbox
                 this.Activated -= MainWindow_Activated;
             }
         }
+
+
 
         private void SetupDraggableRegion()
         {
@@ -161,12 +216,87 @@ namespace IntelliCoreToolbox
                 titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
                 titleBar.ButtonInactiveForegroundColor = Colors.Gray;
             }
+        }
+
+        private void OnThemeToggleClicked(object sender, RoutedEventArgs e)
+        {
+            _isDarkTheme = !_isDarkTheme;
             
-            // 更新MainWindow的背景颜色
-            if (Content is Grid mainGrid)
+            if (_isDarkTheme)
             {
-                mainGrid.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(theme.PageBackground);
+                ApplyTheme(_darkTheme, "深色");
+                // 深色主题时显示设置图标
+                ThemeIcon.Glyph = "\uE771"; // 设置图标（更清晰）
             }
+            else
+            {
+                ApplyTheme(_lightTheme, "白色");
+                // 白色主题时使用相同图标，通过颜色区分
+                ThemeIcon.Glyph = "\uE771"; // 设置图标（更清晰）
+            }
+        }
+
+        private void ApplyTheme(ThemeColors theme, string themeName)
+        {
+            // 更新根Grid和标题栏背景
+            RootGrid.Background = new SolidColorBrush(theme.TitleBarBackground);
+            TitleBarArea.Background = new SolidColorBrush(theme.TitleBarBackground);
+            
+            // 更新标题栏文本颜色
+            AppNameText.Foreground = new SolidColorBrush(theme.TextForeground);
+            AppVersionText.Foreground = new SolidColorBrush(theme.TextForeground);
+            ThemeIcon.Foreground = new SolidColorBrush(theme.ThemeIconColor);
+            
+            // 更新侧边栏
+            SidebarGrid.Background = new SolidColorBrush(theme.SidebarBackground);
+            
+            // 更新侧边栏按钮颜色
+            var sidebarButtons = new[] { SearchButton, AppCenterButton, SnippetsButton, HotkeysButton, SettingsButton };
+            foreach (var button in sidebarButtons)
+            {
+                // 只更新非激活状态的按钮
+                if (button != _currentActiveButton)
+                {
+                    button.Foreground = new SolidColorBrush(theme.SidebarButtonForeground);
+                    button.Background = new SolidColorBrush(Colors.Transparent);
+                }
+            }
+            
+            // 如果有激活的按钮，更新其颜色
+            if (_currentActiveButton != null)
+            {
+                SetButtonActiveState(_currentActiveButton, true);
+            }
+            
+            // 更新主题状态文本
+            ThemeStatusText.Text = $"当前主题: {themeName}";
+            
+            // 更新内容Frame的背景
+            if (ContentFrame.Content is Page currentPage)
+            {
+                currentPage.Background = new SolidColorBrush(theme.PageBackground);
+            }
+            
+            // 更新标题栏按钮颜色
+            UpdateTitleBarButtonColors(theme);
+        }
+
+        private void ContentFrame_Navigated(object sender, Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
+        {
+            // 每当导航到新页面时，只更新页面主题，不重新应用整体主题
+            var currentTheme = _isDarkTheme ? _darkTheme : _lightTheme;
+            var themeName = _isDarkTheme ? "深色" : "白色";
+            
+            if (ContentFrame.Content is Page currentPage)
+            {
+                currentPage.Background = new SolidColorBrush(currentTheme.PageBackground);
+                
+                // 如果页面有特定的主题元素，可以在这里更新
+                UpdatePageThemeElements(currentPage, currentTheme);
+            }
+            
+            // 更新侧边栏主题状态文本
+            ThemeStatusText.Text = $"当前主题: {themeName}";
         }
 
         private void OnNavigationFailed(object sender, Microsoft.UI.Xaml.Navigation.NavigationFailedEventArgs e)
@@ -180,5 +310,115 @@ namespace IntelliCoreToolbox
             WindowId wndId = Win32Interop.GetWindowIdFromWindow(hWnd);
             return AppWindow.GetFromWindowId(wndId);
         }
+
+        // 🎯 侧边栏导航事件处理器
+        private void SearchButton_Click(object sender, RoutedEventArgs e)
+        {
+            NavigateToPage(typeof(IntelliCoreToolbox.Views.SearchPage), SearchButton);
+        }
+
+        private void AppCenterButton_Click(object sender, RoutedEventArgs e)
+        {
+            NavigateToPage(typeof(IntelliCoreToolbox.Views.AppCenterPage), AppCenterButton);
+        }
+
+        private void SnippetsButton_Click(object sender, RoutedEventArgs e)
+        {
+            NavigateToPage(typeof(IntelliCoreToolbox.Views.SnippetsPage), SnippetsButton);
+        }
+
+        private void HotkeysButton_Click(object sender, RoutedEventArgs e)
+        {
+            NavigateToPage(typeof(IntelliCoreToolbox.Views.HotkeyManagerPage), HotkeysButton);
+        }
+
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            NavigateToPage(typeof(IntelliCoreToolbox.Views.SettingsPage), SettingsButton);
+        }
+
+        // 🎯 导航和状态管理方法
+        private void NavigateToPage(Type pageType, Button activeButton)
+        {
+            // 导航到指定页面
+            ContentFrame.Navigate(pageType);
+            
+            // 更新按钮选中状态
+            UpdateButtonActiveState(activeButton);
+        }
+
+        private void UpdateButtonActiveState(Button activeButton)
+        {
+            // 重置所有按钮状态
+            ResetAllButtonStates();
+            
+            // 设置当前按钮为激活状态
+            SetButtonActiveState(activeButton, true);
+            _currentActiveButton = activeButton;
+        }
+
+        private void ResetAllButtonStates()
+        {
+            var sidebarButtons = new[] { SearchButton, AppCenterButton, SnippetsButton, HotkeysButton, SettingsButton };
+            foreach (var button in sidebarButtons)
+            {
+                SetButtonActiveState(button, false);
+            }
+        }
+
+        private void SetButtonActiveState(Button button, bool isActive)
+        {
+            var currentTheme = _isDarkTheme ? _darkTheme : _lightTheme;
+            
+            if (isActive)
+            {
+                // 激活状态：使用主题的按钮颜色
+                button.Background = new SolidColorBrush(currentTheme.ButtonBackground);
+                button.Foreground = new SolidColorBrush(currentTheme.ButtonForeground);
+            }
+            else
+            {
+                // 默认状态：透明背景，侧边栏前景色
+                                 button.Background = new SolidColorBrush(Colors.Transparent);
+                 button.Foreground = new SolidColorBrush(currentTheme.SidebarButtonForeground);
+             }
+         }
+
+         // 🎨 更新页面主题元素
+         private void UpdatePageThemeElements(Page page, ThemeColors theme)
+         {
+             switch (page)
+             {
+                 case IntelliCoreToolbox.Views.HomePage homePage:
+                     if (homePage.FindName("HomePageTitle") is TextBlock homeTitle)
+                         homeTitle.Foreground = new SolidColorBrush(theme.TextForeground);
+                     break;
+
+                 case IntelliCoreToolbox.Views.SearchPage searchPage:
+                     if (searchPage.FindName("PageTitle") is TextBlock searchTitle)
+                         searchTitle.Foreground = new SolidColorBrush(theme.TextForeground);
+                     break;
+
+                 case IntelliCoreToolbox.Views.AppCenterPage appCenterPage:
+                     if (appCenterPage.FindName("PageTitle") is TextBlock appCenterTitle)
+                         appCenterTitle.Foreground = new SolidColorBrush(theme.TextForeground);
+                     break;
+
+                 case IntelliCoreToolbox.Views.SnippetsPage snippetsPage:
+                     if (snippetsPage.FindName("PageTitle") is TextBlock snippetsTitle)
+                         snippetsTitle.Foreground = new SolidColorBrush(theme.TextForeground);
+                     break;
+
+                 case IntelliCoreToolbox.Views.HotkeyManagerPage hotkeyPage:
+                     if (hotkeyPage.FindName("PageTitle") is TextBlock hotkeyTitle)
+                         hotkeyTitle.Foreground = new SolidColorBrush(theme.TextForeground);
+                     break;
+
+                 case IntelliCoreToolbox.Views.SettingsPage settingsPage:
+                     if (settingsPage.FindName("PageTitle") is TextBlock settingsTitle)
+                         settingsTitle.Foreground = new SolidColorBrush(theme.TextForeground);
+                     break;
+             }
+         }
     }
 }

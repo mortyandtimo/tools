@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="IntelliCoreToolbox.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Background="Transparent">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
+            <TextBlock x:Name="PageTitle"
+                       Text="⚙️ 设置界面"
+                       HorizontalAlignment="Center"
+                       FontSize="28"
+                       FontWeight="Bold"
+                       Foreground="DarkSlateGray"/>
+            <TextBlock Text="这里将显示应用程序设置和配置选项"
+                       HorizontalAlignment="Center"
+                       FontSize="16"
+                       Foreground="Gray"/>
+        </StackPanel>
+    </Grid>
+</Page> 
