@@ -1,0 +1,25 @@
+🎯 开始加载收藏状态...
+🎯 当前AllApps应用列表:
+   - Visual Studio (路径: '', 预设: True)
+   - Notepad++ (路径: '', 预设: True)
+   - Chrome (路径: '', 预设: True)
+   - Git (路径: '', 预设: True)
+   - Discord (路径: '', 预设: True)
+   - Postman (路径: '', 预设: True)
+   - Docker (路径: '', 预设: True)
+   - Slack (路径: '', 预设: True)
+   - VS Code (路径: '', 预设: True)
+   - Figma (路径: '', 预设: True)
+   - Adobe XD (路径: '', 预设: True)
+   - Sketch (路径: '', 预设: True)
+   - Notion (路径: '', 预设: True)
+   - 获取窗口信息 (路径: 'D:\磁贴\小工具\获取窗口信息.exe', 预设: False)
+   - qBittorrent (路径: 'D:\磁贴\小工具\qBittorrent.lnk', 预设: False)
+   - 检索硬盘文件夹大小 (路径: 'D:\磁贴\小工具\检索硬盘文件夹大小.exe', 预设: False)
+   - Xshell 8 (路径: 'C:\Users\Public\Desktop\Xshell 8.lnk', 预设: False)
+   - QQ (路径: 'C:\Users\Public\Desktop\QQ.lnk', 预设: False)
+🎯 开始加载收藏状态，配置中收藏数量: 1
+🎯 config.FavoriteApps is null: False
+🎯 config.FavoriteApps实际项目:
+   [0] Name: 'Notepad++', Path: '', IsPreset: True
+🎯 收藏状态加载完成，最终FavoriteApps数量: 0

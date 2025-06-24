@@ -51,13 +51,16 @@
                                 <Border Width="80" Height="80" 
                                        Background="{Binding Background}" 
                                        CornerRadius="16"
-                                       ToolTipService.ToolTip="{Binding Name}">
-                                    <TextBlock Text="{Binding Icon}" 
+                                       ToolTipService.ToolTip="{Binding Description}">
+                                    <TextBlock Text="{Binding Name}" 
                                              HorizontalAlignment="Center" 
                                              VerticalAlignment="Center"
                                              FontWeight="Bold"
-                                             FontSize="12"
-                                             Foreground="White"/>
+                                             FontSize="10"
+                                             Foreground="White"
+                                             TextAlignment="Center"
+                                             TextWrapping="Wrap"
+                                             Margin="4"/>
                                 </Border>
                             </DataTemplate>
                         </ItemsRepeater.ItemTemplate>
@@ -136,6 +139,16 @@
                                        BorderBrush="#E0E0E0"
                                        BorderThickness="1"
                                        Padding="8">
+                                    <!-- 🎯 右键上下文菜单 -->
+                                    <Border.ContextFlyout>
+                                        <MenuFlyout Opening="ContextMenu_Opening">
+                                            <MenuFlyoutItem x:Name="ToggleFavoriteMenuItem" 
+                                                          Text="添加到收藏" 
+                                                          Click="ToggleFavorite_Click"/>
+                                            <MenuFlyoutItem Text="从工具箱移除" 
+                                                          Click="RemoveApp_Click"/>
+                                        </MenuFlyout>
+                                    </Border.ContextFlyout>
                                     <!-- 为整个Border添加工具提示 -->
                                     <ToolTipService.ToolTip>
                                         <StackPanel>

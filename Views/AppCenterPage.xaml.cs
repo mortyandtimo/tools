@@ -180,31 +180,44 @@ namespace IntelliCoreToolbox.Views
             {
                 System.Diagnostics.Debug.WriteLine($"🎯 OnDataInitializationCompleted触发: Success={e.Success}, FavoriteApps={e.FavoriteAppsCount}, Message={e.Message}");
                 
-                if (e.Success && e.FavoriteAppsCount > 0)
+                // 🎯 首先检查是否有待恢复的收藏数据
+                AppService.Instance.CompleteFavoriteRestore();
+                
+                // 然后根据实际收藏数量进行UI更新
+                int actualFavoriteCount = ViewModel.FavoriteApps.Count;
+                
+                if (e.Success)
                 {
-                    // 设置原始收藏数量（只设置一次，基于完整数据）
-                    _originalFavoriteCount = e.FavoriteAppsCount;
+                    // 设置原始收藏数量（基于实际恢复后的数量）
+                    _originalFavoriteCount = actualFavoriteCount;
                     _isDataInitializationCompleted = true; // 🎯 设置完成标志
-                    System.Diagnostics.Debug.WriteLine($"🎯 数据初始化完成，设置_originalFavoriteCount = {_originalFavoriteCount}");
+                    System.Diagnostics.Debug.WriteLine($"🎯 数据初始化完成，实际收藏数量: {actualFavoriteCount}, 设置_originalFavoriteCount = {_originalFavoriteCount}");
                     
                     // 延迟执行UI初始化以确保UI布局完成
-                    DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+                    if (actualFavoriteCount > 0)
                     {
-                        if (FavoritesScrollViewer != null && FavoritesScrollViewer.ActualWidth > 0)
+                        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
                         {
-                            CheckAndUpdateScrollState();
-                            System.Diagnostics.Debug.WriteLine("🎯 基于完整数据完成了滚动状态初始化");
-                        }
-                        else
-                        {
-                            // ScrollViewer还未准备就绪，等待AppCenterPage_Loaded事件
-                            System.Diagnostics.Debug.WriteLine("🎯 ScrollViewer未准备就绪，将在页面加载完成后初始化");
-                        }
-                    });
+                            if (FavoritesScrollViewer != null && FavoritesScrollViewer.ActualWidth > 0)
+                            {
+                                CheckAndUpdateScrollState();
+                                System.Diagnostics.Debug.WriteLine("🎯 基于实际收藏数据完成了滚动状态初始化");
+                            }
+                            else
+                            {
+                                // ScrollViewer还未准备就绪，等待AppCenterPage_Loaded事件
+                                System.Diagnostics.Debug.WriteLine("🎯 ScrollViewer未准备就绪，将在页面加载完成后初始化");
+                            }
+                        });
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("🎯 无收藏应用，跳过滚动状态初始化");
+                    }
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"🎯 数据初始化失败或无数据: Success={e.Success}, Count={e.FavoriteAppsCount}");
+                    System.Diagnostics.Debug.WriteLine($"🎯 数据初始化失败: Success={e.Success}, Message={e.Message}");
                 }
             });
         }
@@ -474,6 +487,106 @@ namespace IntelliCoreToolbox.Views
                 return parent;
             
             return FindParent<T>(parentObject);
+        }
+
+        // 🎯 上下文菜单事件处理
+        private void ContextMenu_Opening(object sender, object e)
+        {
+            if (sender is MenuFlyout menuFlyout)
+            {
+                // 查找触发菜单的Border元素
+                var border = menuFlyout.Target as Border;
+                if (border?.DataContext is ToolboxItem item)
+                {
+                    // 查找收藏菜单项并根据当前状态设置文本
+                    var toggleMenuItem = menuFlyout.Items.FirstOrDefault(x => x is MenuFlyoutItem menuItem && menuItem.Name == "ToggleFavoriteMenuItem") as MenuFlyoutItem;
+                    if (toggleMenuItem != null)
+                    {
+                        toggleMenuItem.Text = item.IsFavorite ? "从收藏中移除" : "添加到收藏";
+                    }
+                }
+            }
+        }
+
+        private void ToggleFavorite_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuFlyoutItem menuItem)
+            {
+                // 🎯 修复：通过FrameworkElement的Tag或DataContext获取数据
+                ToolboxItem item = null;
+                
+                // 方法1：直接从MenuFlyoutItem的DataContext获取
+                if (menuItem.DataContext is ToolboxItem directItem)
+                {
+                    item = directItem;
+                }
+                // 方法2：通过MenuFlyout的Target获取
+                else if (menuItem.Parent is MenuFlyout menuFlyout && menuFlyout.Target is FrameworkElement target)
+                {
+                    item = target.DataContext as ToolboxItem;
+                }
+                
+                if (item != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"🎯 收藏切换: {item.Name}, 当前状态: {item.IsFavorite}");
+                    AppService.Instance.ToggleFavoriteStatus(item);
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("❌ 无法获取ToolboxItem数据");
+                }
+            }
+        }
+
+        private async void RemoveApp_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuFlyoutItem menuItem)
+            {
+                // 🎯 修复：通过FrameworkElement的Tag或DataContext获取数据
+                ToolboxItem item = null;
+                
+                // 方法1：直接从MenuFlyoutItem的DataContext获取
+                if (menuItem.DataContext is ToolboxItem directItem)
+                {
+                    item = directItem;
+                }
+                // 方法2：通过MenuFlyout的Target获取
+                else if (menuItem.Parent is MenuFlyout menuFlyout && menuFlyout.Target is FrameworkElement target)
+                {
+                    item = target.DataContext as ToolboxItem;
+                }
+                
+                if (item != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"🎯 准备移除应用: {item.Name}");
+                    
+                    // 显示确认对话框
+                    var dialog = new ContentDialog()
+                    {
+                        Title = "确认移除",
+                        Content = $"您确定要从工具箱中移除「{item.Name}」吗？\n\n此操作无法撤销。",
+                        PrimaryButtonText = "确认移除",
+                        SecondaryButtonText = "取消",
+                        DefaultButton = ContentDialogButton.Secondary,
+                        XamlRoot = this.XamlRoot
+                    };
+
+                    var result = await dialog.ShowAsync();
+                    if (result == ContentDialogResult.Primary)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"🎯 用户确认移除: {item.Name}");
+                        AppService.Instance.RemoveApplication(item);
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"🎯 用户取消移除: {item.Name}");
+                    }
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("❌ 无法获取ToolboxItem数据");
+                }
+            }
         }
     }
 } 

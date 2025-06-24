@@ -1,0 +1,8 @@
+foreach循环开始，共7项
+处理: Notion
+处理: QQ
+处理: 获取窗口信息
+处理: 检索硬盘文件夹大小
+处理: qBittorrent
+处理: Figma
+处理: Docker

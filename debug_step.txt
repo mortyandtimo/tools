@@ -1,0 +1,5 @@
+步骤1: 开始处理，config.FavoriteApps.Count = 7
+步骤2: 开始收集收藏应用数据
+步骤3: 即将进入foreach循环
+步骤4: 找到7个收藏应用，准备UI更新
+步骤5: 当前线程无Dispatcher，需要在UI线程执行
