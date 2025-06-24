@@ -10,179 +10,31 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Dispatching;
 using System.Collections.Generic;
+using IntelliCoreToolbox.Services;
+using Windows.Foundation;
 
 namespace IntelliCoreToolbox.Views
 {
-    // 🎯 数据模型：工具箱应用项
-    public class ToolboxItem
-    {
-        public string Name { get; set; }
-        public string Icon { get; set; }
-        public string Background { get; set; }
-        public string Description { get; set; }
-        public string Path { get; set; }
-    }
+    // 🎯 数据模型已迁移到 IntelliCoreToolbox.Services 命名空间
 
-    // 🎯 数据模型：应用合集
-    public class AppCollection
-    {
-        public string Name { get; set; }
-        public string Icon { get; set; }
-        public string Background { get; set; }
-        public string AppCount { get; set; }
-        public ObservableCollection<ToolboxItem> Apps { get; set; } = new ObservableCollection<ToolboxItem>();
-    }
-
-    // 🎯 ViewModel：应用中心页面
+    // 🎯 ViewModel：应用中心页面 (重构为使用AppService)
     public class AppCenterViewModel : INotifyPropertyChanged
     {
-        public ObservableCollection<ToolboxItem> FavoriteApps { get; set; }
-        public ObservableCollection<ToolboxItem> AllApps { get; set; }
-        public ObservableCollection<AppCollection> Collections { get; set; }
-        public ObservableCollection<ToolboxItem> LoopingFavoriteApps { get; set; }
+        private readonly AppService _appService;
+
+        public ObservableCollection<ToolboxItem> FavoriteApps => _appService.FavoriteApps;
+        public ObservableCollection<ToolboxItem> AllApps => _appService.AllApps;
+        public ObservableCollection<AppCollection> Collections => _appService.Collections;
+        public ObservableCollection<ToolboxItem> LoopingFavoriteApps => _appService.LoopingFavoriteApps;
 
         public AppCenterViewModel()
         {
-            InitializeData();
+            _appService = AppService.Instance;
         }
 
-        private void InitializeData()
-        {
-            // 初始化收藏应用
-            FavoriteApps = new ObservableCollection<ToolboxItem>
-            {
-                new ToolboxItem { Name = "Visual Studio Code", Icon = "VS", Background = "LightBlue", Description = "代码编辑器" },
-                new ToolboxItem { Name = "Notepad++", Icon = "N++", Background = "Orange", Description = "文本编辑器" },
-                new ToolboxItem { Name = "Git", Icon = "Git", Background = "Green", Description = "版本控制" },
-                new ToolboxItem { Name = "Discord", Icon = "DC", Background = "Purple", Description = "聊天工具" },
-                new ToolboxItem { Name = "Chrome", Icon = "Chr", Background = "Red", Description = "浏览器" },
-                new ToolboxItem { Name = "Postman", Icon = "PM", Background = "DarkBlue", Description = "API测试" },
-                new ToolboxItem { Name = "Docker", Icon = "Doc", Background = "Teal", Description = "容器平台" },
-                new ToolboxItem { Name = "Figma", Icon = "Fig", Background = "Brown", Description = "设计工具" },
-                // 为了实现无限滚动，添加更多项目
-                new ToolboxItem { Name = "Unity", Icon = "Uni", Background = "DarkSlateBlue", Description = "游戏引擎" },
-                new ToolboxItem { Name = "Blender", Icon = "Bln", Background = "DarkOrange", Description = "3D建模" },
-                new ToolboxItem { Name = "Photoshop", Icon = "PS", Background = "DarkCyan", Description = "图像编辑" },
-                new ToolboxItem { Name = "IntelliJ", Icon = "IJ", Background = "Maroon", Description = "Java IDE" }
-            };
+        // 🎯 数据初始化已迁移到AppService
 
-            LoopingFavoriteApps = new ObservableCollection<ToolboxItem>();
-            CreateLoopingFavorites();
-
-            // 初始化全部应用
-            AllApps = new ObservableCollection<ToolboxItem>
-            {
-                new ToolboxItem { Name = "Visual Studio", Icon = "&#xE943;", Background = "Blue", Description = "IDE开发环境" },
-                new ToolboxItem { Name = "Notepad++", Icon = "&#xE8A5;", Background = "Orange", Description = "文本编辑器" },
-                new ToolboxItem { Name = "Chrome", Icon = "&#xE774;", Background = "Red", Description = "网页浏览器" },
-                new ToolboxItem { Name = "Git", Icon = "&#xE8AB;", Background = "Green", Description = "版本控制工具" },
-                new ToolboxItem { Name = "Discord", Icon = "&#xE8BD;", Background = "Purple", Description = "聊天通讯工具" },
-                new ToolboxItem { Name = "Postman", Icon = "&#xE968;", Background = "DarkBlue", Description = "API开发测试" },
-                new ToolboxItem { Name = "Docker", Icon = "&#xE8C7;", Background = "DarkCyan", Description = "容器化平台" },
-                new ToolboxItem { Name = "Slack", Icon = "&#xE8F2;", Background = "DarkMagenta", Description = "团队协作" },
-                new ToolboxItem { Name = "VS Code", Icon = "&#xE943;", Background = "LightBlue", Description = "轻量级编辑器" },
-                new ToolboxItem { Name = "Figma", Icon = "&#xE8EF;", Background = "Brown", Description = "UI设计工具" },
-                new ToolboxItem { Name = "Adobe XD", Icon = "&#xE8F0;", Background = "Crimson", Description = "原型设计" },
-                new ToolboxItem { Name = "Sketch", Icon = "&#xE8F1;", Background = "Gold", Description = "界面设计" },
-                new ToolboxItem { Name = "Notion", Icon = "&#xE8A5;", Background = "Gray", Description = "笔记协作" }
-            };
-
-            // 初始化合集
-            Collections = new ObservableCollection<AppCollection>
-            {
-                new AppCollection 
-                { 
-                    Name = "设计工具", 
-                    Icon = "🎨", 
-                    Background = "CornflowerBlue", 
-                    AppCount = "8 个应用",
-                    Apps = new ObservableCollection<ToolboxItem>
-                    {
-                        new ToolboxItem { Name = "Figma", Icon = "&#xE8EF;", Background = "Brown", Description = "UI设计工具" },
-                        new ToolboxItem { Name = "Adobe XD", Icon = "&#xE8F0;", Background = "Crimson", Description = "原型设计" },
-                        new ToolboxItem { Name = "Sketch", Icon = "&#xE8F1;", Background = "Gold", Description = "界面设计" },
-                        new ToolboxItem { Name = "Photoshop", Icon = "&#xE91B;", Background = "DarkCyan", Description = "图像编辑" },
-                        new ToolboxItem { Name = "Illustrator", Icon = "&#xE91C;", Background = "Orange", Description = "矢量绘图" },
-                        new ToolboxItem { Name = "Canva", Icon = "&#xE8EF;", Background = "Green", Description = "在线设计" },
-                        new ToolboxItem { Name = "Blender", Icon = "&#xE7F8;", Background = "DarkOrange", Description = "3D建模" },
-                        new ToolboxItem { Name = "GIMP", Icon = "&#xE91B;", Background = "Purple", Description = "免费图像编辑" }
-                    }
-                },
-                new AppCollection 
-                { 
-                    Name = "开发工具", 
-                    Icon = "💻", 
-                    Background = "ForestGreen", 
-                    AppCount = "12 个应用",
-                    Apps = new ObservableCollection<ToolboxItem>
-                    {
-                        new ToolboxItem { Name = "Visual Studio", Icon = "&#xE943;", Background = "Blue", Description = "IDE开发环境" },
-                        new ToolboxItem { Name = "VS Code", Icon = "&#xE943;", Background = "LightBlue", Description = "轻量级编辑器" },
-                        new ToolboxItem { Name = "IntelliJ IDEA", Icon = "&#xE943;", Background = "Maroon", Description = "Java IDE" },
-                        new ToolboxItem { Name = "Git", Icon = "&#xE8AB;", Background = "Green", Description = "版本控制工具" },
-                        new ToolboxItem { Name = "Docker", Icon = "&#xE8C7;", Background = "DarkCyan", Description = "容器化平台" },
-                        new ToolboxItem { Name = "Postman", Icon = "&#xE968;", Background = "DarkBlue", Description = "API开发测试" }
-                    }
-                },
-                new AppCollection 
-                { 
-                    Name = "游戏娱乐", 
-                    Icon = "🎮", 
-                    Background = "Crimson", 
-                    AppCount = "5 个应用",
-                    Apps = new ObservableCollection<ToolboxItem>
-                    {
-                        new ToolboxItem { Name = "Steam", Icon = "&#xE8C1;", Background = "DarkBlue", Description = "游戏平台" },
-                        new ToolboxItem { Name = "Discord", Icon = "&#xE8BD;", Background = "Purple", Description = "游戏聊天" },
-                        new ToolboxItem { Name = "Unity", Icon = "&#xE7F8;", Background = "DarkSlateBlue", Description = "游戏引擎" },
-                        new ToolboxItem { Name = "OBS Studio", Icon = "&#xE714;", Background = "DarkGreen", Description = "直播录制" },
-                        new ToolboxItem { Name = "Twitch", Icon = "&#xE8BD;", Background = "MediumPurple", Description = "直播平台" }
-                    }
-                },
-                new AppCollection 
-                { 
-                    Name = "系统工具", 
-                    Icon = "🔧", 
-                    Background = "DarkOrange", 
-                    AppCount = "15 个应用",
-                    Apps = new ObservableCollection<ToolboxItem>
-                    {
-                        new ToolboxItem { Name = "7-Zip", Icon = "&#xE8B5;", Background = "DarkBlue", Description = "压缩解压" },
-                        new ToolboxItem { Name = "Everything", Icon = "&#xE721;", Background = "Green", Description = "文件搜索" },
-                        new ToolboxItem { Name = "PowerToys", Icon = "&#xE8C1;", Background = "Blue", Description = "系统增强" },
-                        new ToolboxItem { Name = "TaskManager", Icon = "&#xE7EF;", Background = "Red", Description = "任务管理器" }
-                    }
-                },
-                new AppCollection 
-                { 
-                    Name = "办公软件", 
-                    Icon = "📊", 
-                    Background = "MediumPurple", 
-                    AppCount = "6 个应用",
-                    Apps = new ObservableCollection<ToolboxItem>
-                    {
-                        new ToolboxItem { Name = "Microsoft Office", Icon = "&#xE8D7;", Background = "Blue", Description = "办公套件" },
-                        new ToolboxItem { Name = "Slack", Icon = "&#xE8F2;", Background = "DarkMagenta", Description = "团队协作" },
-                        new ToolboxItem { Name = "Zoom", Icon = "&#xE8AA;", Background = "DarkBlue", Description = "视频会议" },
-                        new ToolboxItem { Name = "Notion", Icon = "&#xE8A5;", Background = "Gray", Description = "笔记协作" }
-                    }
-                }
-            };
-        }
-
-        private void CreateLoopingFavorites()
-        {
-            if (FavoriteApps == null || FavoriteApps.Count == 0) return;
-
-            // 将整个队列重复三次，而不是将每个项目重复三次
-            for (int i = 0; i < 3; i++)
-            {
-                foreach (var item in FavoriteApps)
-                {
-                    LoopingFavoriteApps.Add(item);
-                }
-            }
-        }
+        // 🎯 CreateLoopingFavorites已迁移到AppService
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -214,6 +66,8 @@ namespace IntelliCoreToolbox.Views
             ViewModel = new AppCenterViewModel();
             this.DataContext = ViewModel;
 
+            // 🎯 监听FavoriteApps数据加载完成
+            ViewModel.FavoriteApps.CollectionChanged += FavoriteApps_CollectionChanged;
             _originalFavoriteCount = ViewModel.FavoriteApps.Count;
 
             // 绑定页面级别的SizeChanged事件
@@ -225,11 +79,36 @@ namespace IntelliCoreToolbox.Views
             // 初始状态设置为非无限滚动
             FavoritesRepeater.ItemsSource = ViewModel.FavoriteApps;
             UpdateScrollState(false); // 强制初始为锁定状态
+            
+            // 🎯 页面加载后直接检查无限滚动状态
+            this.Loaded += AppCenterPage_Loaded;
         }
 
-        private void AppCenterPage_SizeChanged(object sender, SizeChangedEventArgs e)
+        // 🎯 页面加载完成后的初始化
+        private void AppCenterPage_Loaded(object sender, RoutedEventArgs e)
         {
-            if (FavoritesScrollViewer == null || _originalFavoriteCount == 0) return;
+            // 确保数据已加载
+            if (ViewModel.FavoriteApps.Count > 0)
+            {
+                _originalFavoriteCount = ViewModel.FavoriteApps.Count;
+                System.Diagnostics.Debug.WriteLine($"页面加载完成，FavoriteApps数量: {_originalFavoriteCount}");
+                
+                // 延迟检查以确保UI布局完成
+                DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+                {
+                    CheckAndUpdateScrollState();
+                });
+            }
+        }
+
+        // 🎯 检查并更新滚动状态的统一方法
+        private void CheckAndUpdateScrollState()
+        {
+            if (FavoritesScrollViewer == null || _originalFavoriteCount == 0)
+            {
+                System.Diagnostics.Debug.WriteLine($"CheckAndUpdateScrollState跳过: ScrollViewer={FavoritesScrollViewer != null}, Count={_originalFavoriteCount}");
+                return;
+            }
 
             const double itemWidth = 80;
             const double spacing = 20;
@@ -237,15 +116,63 @@ namespace IntelliCoreToolbox.Views
             
             bool needsInfiniteScroll = FavoritesScrollViewer.ActualWidth < requiredWidth;
 
+            System.Diagnostics.Debug.WriteLine($"滚动状态检查: ViewerWidth={FavoritesScrollViewer.ActualWidth}, RequiredWidth={requiredWidth}, NeedsInfinite={needsInfiniteScroll}, Current={_isInfiniteScrollActive}");
+
             if (needsInfiniteScroll != _isInfiniteScrollActive)
             {
                 UpdateScrollState(needsInfiniteScroll);
             }
         }
 
+        // 🎯 处理FavoriteApps数据加载完成事件
+        private void FavoriteApps_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            System.Diagnostics.Debug.WriteLine($"FavoriteApps_CollectionChanged: Action={e.Action}, CurrentCount={ViewModel.FavoriteApps.Count}, OriginalCount={_originalFavoriteCount}");
+            
+            // 只在首次数据加载时处理
+            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add && _originalFavoriteCount == 0 && ViewModel.FavoriteApps.Count > 0)
+            {
+                _originalFavoriteCount = ViewModel.FavoriteApps.Count;
+                System.Diagnostics.Debug.WriteLine($"FavoriteApps数据加载完成: Count={_originalFavoriteCount}");
+                
+                // 延迟执行以确保UI布局完成
+                DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+                {
+                    if (FavoritesScrollViewer != null && FavoritesScrollViewer.ActualWidth > 0)
+                    {
+                        // 直接调用滚动状态检查逻辑
+                        const double itemWidth = 80;
+                        const double spacing = 20;
+                        double requiredWidth = (_originalFavoriteCount * itemWidth) + ((_originalFavoriteCount - 1) * spacing);
+                        
+                        bool needsInfiniteScroll = FavoritesScrollViewer.ActualWidth < requiredWidth;
+                        
+                        System.Diagnostics.Debug.WriteLine($"数据加载后滚动状态检查: ViewerWidth={FavoritesScrollViewer.ActualWidth}, RequiredWidth={requiredWidth}, NeedsInfinite={needsInfiniteScroll}");
+
+                        if (needsInfiniteScroll != _isInfiniteScrollActive)
+                        {
+                            UpdateScrollState(needsInfiniteScroll);
+                        }
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"ScrollViewer未准备就绪: ViewerNull={FavoritesScrollViewer == null}, ActualWidth={FavoritesScrollViewer?.ActualWidth ?? -1}");
+                    }
+                });
+            }
+        }
+
+        private void AppCenterPage_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            // 使用统一的检查方法
+            CheckAndUpdateScrollState();
+        }
+
         private void UpdateScrollState(bool activateInfiniteScroll)
         {
             _isInfiniteScrollActive = activateInfiniteScroll;
+
+            System.Diagnostics.Debug.WriteLine($"UpdateScrollState: 激活无限滚动={activateInfiniteScroll}, LoopingApps数量={ViewModel.LoopingFavoriteApps.Count}");
 
             if (_isInfiniteScrollActive)
             {
@@ -255,6 +182,7 @@ namespace IntelliCoreToolbox.Views
                 FavoritesScrollViewer.HorizontalScrollMode = ScrollMode.Auto;
                 FavoritesRepeaterContainer.HorizontalAlignment = HorizontalAlignment.Left; // 确保内容靠左对齐以进行滚动
                 DispatcherQueue.TryEnqueue(ResetScrollViewPosition);
+                System.Diagnostics.Debug.WriteLine("已切换到无限滚动模式");
             }
             else
             {
@@ -276,6 +204,7 @@ namespace IntelliCoreToolbox.Views
                     FavoritesScrollViewer.HorizontalScrollMode = ScrollMode.Disabled;
                     FavoritesRepeaterContainer.HorizontalAlignment = HorizontalAlignment.Center; // 在滚动结束后再居中
                 });
+                System.Diagnostics.Debug.WriteLine("已切换到居中锁定模式");
             }
         }
 

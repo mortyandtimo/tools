@@ -1,0 +1,11 @@
+?? LoadUserApps开始: 文件路径=C:\Users\25743\AppData\Roaming\IntelliCoreToolbox\user-apps.json
+?? 文件存在检查: True
+?? 读取到JSON内容长度: 1059
+?? JSON内容预览: {
+  "UserApps": [
+    {
+      "Name": "WinSpy",
+      "Icon": "&#xE8FC;",
+      "Background": "...
+?? 反序列化结果: config=True, UserApps=5
+?? 已清理并添加5个用户应用到_userAddedApps

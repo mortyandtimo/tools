@@ -6,6 +6,12 @@ using Microsoft.UI.Xaml.Media;
 using System;
 using WinRT.Interop;
 using Windows.UI;
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using IntelliCoreToolbox.Services;
 
 namespace IntelliCoreToolbox
 {
@@ -424,5 +430,148 @@ namespace IntelliCoreToolbox
                      break;
              }
          }
+
+        // 🎯 拖拽事件处理：验证拖拽内容
+        private void RootGrid_DragOver(object sender, DragEventArgs e)
+        {
+            // 检查拖拽数据是否包含文件
+            if (e.DataView.Contains(StandardDataFormats.StorageItems))
+            {
+                e.AcceptedOperation = DataPackageOperation.Copy;
+                // 提供视觉反馈：显示"+"号光标
+                e.DragUIOverride.Caption = "添加应用到工具箱";
+                e.DragUIOverride.IsContentVisible = true;
+            }
+            else
+            {
+                e.AcceptedOperation = DataPackageOperation.None;
+            }
+        }
+
+        // 🎯 拖拽事件处理：处理文件拖放
+        private async void RootGrid_Drop(object sender, DragEventArgs e)
+        {
+            try
+            {
+                if (e.DataView.Contains(StandardDataFormats.StorageItems))
+                {
+                    // 获取拖放的文件列表
+                    var items = await e.DataView.GetStorageItemsAsync();
+                    var appService = AppService.Instance;
+                    
+                    var addedCount = 0;
+                    var alreadyExistsCount = 0;
+                    var failedFiles = new List<string>();
+
+                    foreach (var item in items)
+                    {
+                        if (item is StorageFile file)
+                        {
+                            // 验证文件类型
+                            var extension = Path.GetExtension(file.Path).ToLowerInvariant();
+                            if (extension == ".exe" || extension == ".lnk")
+                            {
+                                // 尝试添加应用
+                                var result = await appService.AddApplication(file.Path);
+                                if (result.Success)
+                                {
+                                    addedCount++;
+                                }
+                                else if (result.IsAlreadyExists)
+                                {
+                                    alreadyExistsCount++;
+                                }
+                                else
+                                {
+                                    failedFiles.Add($"{file.Name}: {result.Message}");
+                                }
+                            }
+                            else
+                            {
+                                failedFiles.Add($"{file.Name} (不支持的文件类型)");
+                            }
+                        }
+                    }
+
+                    // 显示添加结果反馈
+                    await ShowDropResultDialog(addedCount, alreadyExistsCount, failedFiles);
+
+                    // 如果有应用添加成功，且当前不在应用中心页面，则导航到应用中心
+                    if (addedCount > 0 && ContentFrame.Content?.GetType() != typeof(IntelliCoreToolbox.Views.AppCenterPage))
+                    {
+                        NavigateToPage(typeof(IntelliCoreToolbox.Views.AppCenterPage), AppCenterButton);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"处理拖放文件时发生错误: {ex.Message}");
+                
+                // 显示错误对话框
+                var dialog = new ContentDialog()
+                {
+                    Title = "添加应用失败",
+                    Content = "处理拖放文件时发生错误，请重试。",
+                    CloseButtonText = "确定",
+                    XamlRoot = this.Content.XamlRoot
+                };
+                await dialog.ShowAsync();
+            }
+        }
+
+        // 🎯 显示拖放结果对话框（改进版本）
+        private async System.Threading.Tasks.Task ShowDropResultDialog(int addedCount, int alreadyExistsCount, List<string> failedFiles)
+        {
+            string title;
+            string content;
+
+            if (addedCount > 0 && alreadyExistsCount == 0 && failedFiles.Count == 0)
+            {
+                title = "添加成功";
+                content = $"成功添加了 {addedCount} 个应用到工具箱！\n应用数据已自动保存。";
+            }
+            else if (addedCount > 0)
+            {
+                title = "添加完成";
+                var messages = new List<string>();
+                messages.Add($"✅ 成功添加: {addedCount} 个应用");
+                
+                if (alreadyExistsCount > 0)
+                    messages.Add($"ℹ️ 已存在: {alreadyExistsCount} 个应用");
+                
+                if (failedFiles.Count > 0)
+                    messages.Add($"❌ 添加失败: {failedFiles.Count} 个文件");
+
+                content = string.Join("\n", messages);
+                
+                if (failedFiles.Count > 0)
+                    content += $"\n\n失败详情：\n{string.Join("\n", failedFiles)}";
+                
+                content += "\n\n✨ 成功添加的应用数据已自动保存。";
+            }
+            else if (alreadyExistsCount > 0 && failedFiles.Count == 0)
+            {
+                title = "应用已存在";
+                content = $"所选的 {alreadyExistsCount} 个应用已经在工具箱中。\n\n💡 提示：您可以在应用中心查看现有应用。";
+            }
+            else
+            {
+                title = "添加失败";
+                if (failedFiles.Count > 0)
+                    content = $"以下文件添加失败：\n{string.Join("\n", failedFiles)}";
+                else
+                    content = "没有找到有效的应用程序文件。\n\n📋 支持的文件类型：\n• .exe (可执行文件)\n• .lnk (快捷方式)";
+            }
+
+            var dialog = new ContentDialog()
+            {
+                Title = title,
+                Content = content,
+                CloseButtonText = "确定",
+                XamlRoot = this.Content.XamlRoot
+            };
+
+            await dialog.ShowAsync();
+        }
     }
 }
