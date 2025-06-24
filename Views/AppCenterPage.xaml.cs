@@ -6,6 +6,10 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Dispatching;
+using System.Collections.Generic;
 
 namespace IntelliCoreToolbox.Views
 {
@@ -35,6 +39,7 @@ namespace IntelliCoreToolbox.Views
         public ObservableCollection<ToolboxItem> FavoriteApps { get; set; }
         public ObservableCollection<ToolboxItem> AllApps { get; set; }
         public ObservableCollection<AppCollection> Collections { get; set; }
+        public ObservableCollection<ToolboxItem> LoopingFavoriteApps { get; set; }
 
         public AppCenterViewModel()
         {
@@ -61,6 +66,9 @@ namespace IntelliCoreToolbox.Views
                 new ToolboxItem { Name = "IntelliJ", Icon = "IJ", Background = "Maroon", Description = "Java IDE" }
             };
 
+            LoopingFavoriteApps = new ObservableCollection<ToolboxItem>();
+            CreateLoopingFavorites();
+
             // 初始化全部应用
             AllApps = new ObservableCollection<ToolboxItem>
             {
@@ -75,7 +83,8 @@ namespace IntelliCoreToolbox.Views
                 new ToolboxItem { Name = "VS Code", Icon = "&#xE943;", Background = "LightBlue", Description = "轻量级编辑器" },
                 new ToolboxItem { Name = "Figma", Icon = "&#xE8EF;", Background = "Brown", Description = "UI设计工具" },
                 new ToolboxItem { Name = "Adobe XD", Icon = "&#xE8F0;", Background = "Crimson", Description = "原型设计" },
-                new ToolboxItem { Name = "Sketch", Icon = "&#xE8F1;", Background = "Gold", Description = "界面设计" }
+                new ToolboxItem { Name = "Sketch", Icon = "&#xE8F1;", Background = "Gold", Description = "界面设计" },
+                new ToolboxItem { Name = "Notion", Icon = "&#xE8A5;", Background = "Gray", Description = "笔记协作" }
             };
 
             // 初始化合集
@@ -161,11 +170,25 @@ namespace IntelliCoreToolbox.Views
             };
         }
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        private void CreateLoopingFavorites()
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            if (FavoriteApps == null || FavoriteApps.Count == 0) return;
+
+            // 将整个队列重复三次，而不是将每个项目重复三次
+            for (int i = 0; i < 3; i++)
+            {
+                foreach (var item in FavoriteApps)
+                {
+                    LoopingFavoriteApps.Add(item);
+                }
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected void OnPropertyChanged([CallerMemberName] string name = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
     }
 
@@ -178,20 +201,115 @@ namespace IntelliCoreToolbox.Views
 
         // 🎯 ViewModel实例
         public AppCenterViewModel ViewModel { get; set; }
-        
+
+        private int _originalFavoriteCount = 0;
+        private bool _isInfiniteScrollActive = false;
+        private bool _isProgrammaticallyScrolling = false;
+
         public AppCenterPage()
         {
             this.InitializeComponent();
-            
+
             // 初始化ViewModel
             ViewModel = new AppCenterViewModel();
             this.DataContext = ViewModel;
-            
+
+            _originalFavoriteCount = ViewModel.FavoriteApps.Count;
+
+            // 绑定页面级别的SizeChanged事件
+            this.SizeChanged += AppCenterPage_SizeChanged;
+
             // 为页面添加点击事件，用于取消选中
             this.Tapped += AppCenterPage_Tapped;
             
-            // 🎯 为收藏区ScrollViewer添加鼠标滚轮事件处理（暂时移除，后续可添加）
-            // FavoritesScrollViewer.PointerWheelChanged += FavoritesScrollViewer_PointerWheelChanged;
+            // 初始状态设置为非无限滚动
+            FavoritesRepeater.ItemsSource = ViewModel.FavoriteApps;
+            UpdateScrollState(false); // 强制初始为锁定状态
+        }
+
+        private void AppCenterPage_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (FavoritesScrollViewer == null || _originalFavoriteCount == 0) return;
+
+            const double itemWidth = 80;
+            const double spacing = 20;
+            double requiredWidth = (_originalFavoriteCount * itemWidth) + ((_originalFavoriteCount - 1) * spacing);
+            
+            bool needsInfiniteScroll = FavoritesScrollViewer.ActualWidth < requiredWidth;
+
+            if (needsInfiniteScroll != _isInfiniteScrollActive)
+            {
+                UpdateScrollState(needsInfiniteScroll);
+            }
+        }
+
+        private void UpdateScrollState(bool activateInfiniteScroll)
+        {
+            _isInfiniteScrollActive = activateInfiniteScroll;
+
+            if (_isInfiniteScrollActive)
+            {
+                // 切换到无限滚动
+                FavoritesScrollViewer.ViewChanged += FavoritesScrollViewer_ViewChanged;
+                FavoritesRepeater.ItemsSource = ViewModel.LoopingFavoriteApps;
+                FavoritesScrollViewer.HorizontalScrollMode = ScrollMode.Auto;
+                FavoritesRepeaterContainer.HorizontalAlignment = HorizontalAlignment.Left; // 确保内容靠左对齐以进行滚动
+                DispatcherQueue.TryEnqueue(ResetScrollViewPosition);
+            }
+            else
+            {
+                // 切换到视觉居中锁定模式
+                FavoritesScrollViewer.ViewChanged -= FavoritesScrollViewer_ViewChanged;
+
+                const double itemWidthWithSpacing = 80 + 20;
+                double viewportCenterAbs = FavoritesScrollViewer.HorizontalOffset + (FavoritesScrollViewer.ActualWidth / 2);
+                int centerIndexInLoop = (int)(viewportCenterAbs / itemWidthWithSpacing);
+                int centerIndexInOriginal = _originalFavoriteCount > 0 ? centerIndexInLoop % _originalFavoriteCount : 0;
+                
+                FavoritesRepeater.ItemsSource = ViewModel.FavoriteApps;
+                
+                // 延迟以确保ItemsSource更新后布局完成
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    double targetOffset = (centerIndexInOriginal * itemWidthWithSpacing) + (itemWidthWithSpacing / 2) - (FavoritesScrollViewer.ActualWidth / 2);
+                    FavoritesScrollViewer.ChangeView(targetOffset, null, null, true);
+                    FavoritesScrollViewer.HorizontalScrollMode = ScrollMode.Disabled;
+                    FavoritesRepeaterContainer.HorizontalAlignment = HorizontalAlignment.Center; // 在滚动结束后再居中
+                });
+            }
+        }
+
+        private void ResetScrollViewPosition()
+        {
+            if (!_isInfiniteScrollActive || _originalFavoriteCount == 0) return;
+            const double itemWidthWithSpacing = 80 + 20;
+            double offset = itemWidthWithSpacing * _originalFavoriteCount;
+            FavoritesScrollViewer.ChangeView(offset, null, null, true);
+        }
+
+        private void FavoritesScrollViewer_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
+        {
+            if (e.IsIntermediate || !_isInfiniteScrollActive || _isProgrammaticallyScrolling) return;
+
+            var scrollViewer = sender as ScrollViewer;
+            if (scrollViewer == null) return;
+
+            const double itemWidthWithSpacing = 80 + 20;
+            double sectionWidth = itemWidthWithSpacing * _originalFavoriteCount;
+            double offset = scrollViewer.HorizontalOffset;
+
+            if (offset >= sectionWidth * 2)
+            {
+                _isProgrammaticallyScrolling = true;
+                scrollViewer.ChangeView(offset - sectionWidth, null, null, true);
+                DispatcherQueue.TryEnqueue(() => _isProgrammaticallyScrolling = false);
+            }
+            else if (offset < sectionWidth)
+            {
+                _isProgrammaticallyScrolling = true;
+                scrollViewer.ChangeView(offset + sectionWidth, null, null, true);
+                DispatcherQueue.TryEnqueue(() => _isProgrammaticallyScrolling = false);
+            }
         }
 
         // 🎯 4.1 实现收藏区的无限循环滚动（暂时注释，后续可完善）

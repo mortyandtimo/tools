@@ -41,26 +41,28 @@
                              VerticalScrollMode="Disabled"
                              ZoomMode="Disabled"
                              Margin="16,0,16,12">
-                    <ItemsRepeater ItemsSource="{x:Bind ViewModel.FavoriteApps, Mode=OneWay}">
-                        <ItemsRepeater.Layout>
-                            <StackLayout Orientation="Horizontal" Spacing="20"/>
-                        </ItemsRepeater.Layout>
-                        <ItemsRepeater.ItemTemplate>
-                            <DataTemplate>
-                                <Border Width="80" Height="80" 
-                                       Background="{Binding Background}" 
-                                       CornerRadius="16"
-                                       ToolTipService.ToolTip="{Binding Name}">
-                                    <TextBlock Text="{Binding Icon}" 
-                                             HorizontalAlignment="Center" 
-                                             VerticalAlignment="Center"
-                                             FontWeight="Bold"
-                                             FontSize="12"
-                                             Foreground="White"/>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsRepeater.ItemTemplate>
-                    </ItemsRepeater>
+                    <Grid x:Name="FavoritesRepeaterContainer">
+                        <ItemsRepeater x:Name="FavoritesRepeater">
+                            <ItemsRepeater.Layout>
+                                <StackLayout Orientation="Horizontal" Spacing="20"/>
+                            </ItemsRepeater.Layout>
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Width="80" Height="80" 
+                                            Background="{Binding Background}" 
+                                            CornerRadius="16"
+                                            ToolTipService.ToolTip="{Binding Name}">
+                                        <TextBlock Text="{Binding Icon}" 
+                                                    HorizontalAlignment="Center" 
+                                                    VerticalAlignment="Center"
+                                                    FontWeight="Bold"
+                                                    FontSize="12"
+                                                    Foreground="White"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
+                    </Grid>
                 </ScrollViewer>
             </Grid>
         </Border>
