@@ -57,6 +57,7 @@ namespace IntelliCoreToolbox.Views
         private int _originalFavoriteCount = 0;
         private bool _isInfiniteScrollActive = false;
         private bool _isProgrammaticallyScrolling = false;
+        private bool _isDataInitializationCompleted = false; // 🎯 标志位：数据是否完全加载完成
 
         public AppCenterPage()
         {
@@ -66,9 +67,11 @@ namespace IntelliCoreToolbox.Views
             ViewModel = new AppCenterViewModel();
             this.DataContext = ViewModel;
 
-            // 🎯 监听FavoriteApps数据加载完成
+            // 🎯 监听FavoriteApps渐进式加载（用户体验）
             ViewModel.FavoriteApps.CollectionChanged += FavoriteApps_CollectionChanged;
-            _originalFavoriteCount = ViewModel.FavoriteApps.Count;
+
+            // 🎯 监听AppService数据初始化完成事件（系统稳定性）
+            AppService.Instance.DataInitializationCompleted += OnDataInitializationCompleted;
 
             // 绑定页面级别的SizeChanged事件
             this.SizeChanged += AppCenterPage_SizeChanged;
@@ -87,17 +90,42 @@ namespace IntelliCoreToolbox.Views
         // 🎯 页面加载完成后的初始化
         private void AppCenterPage_Loaded(object sender, RoutedEventArgs e)
         {
-            // 确保数据已加载
-            if (ViewModel.FavoriteApps.Count > 0)
+            System.Diagnostics.Debug.WriteLine("🎯 AppCenterPage_Loaded触发");
+            
+            // 检查数据是否已经在AppService中加载完成（页面重新导航的情况）
+            CheckDataAlreadyLoaded();
+            
+            // 如果数据已经加载完成且_originalFavoriteCount已设置，则进行滚动状态检查
+            if (_isDataInitializationCompleted && _originalFavoriteCount > 0 && FavoritesScrollViewer != null)
             {
-                _originalFavoriteCount = ViewModel.FavoriteApps.Count;
-                System.Diagnostics.Debug.WriteLine($"页面加载完成，FavoriteApps数量: {_originalFavoriteCount}");
-                
-                // 延迟检查以确保UI布局完成
                 DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
                 {
                     CheckAndUpdateScrollState();
+                    System.Diagnostics.Debug.WriteLine("🎯 页面加载后完成滚动状态检查");
                 });
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"🎯 页面加载时数据尚未准备就绪: DataInitCompleted={_isDataInitializationCompleted}, Count={_originalFavoriteCount}");
+            }
+        }
+
+        // 🎯 检查AppService中是否已有数据（处理页面重新导航的情况）
+        private void CheckDataAlreadyLoaded()
+        {
+            // 如果还没有标记为完成，但FavoriteApps中已经有数据，说明是页面重新导航
+            if (!_isDataInitializationCompleted && ViewModel.FavoriteApps.Count > 0)
+            {
+                _originalFavoriteCount = ViewModel.FavoriteApps.Count;
+                _isDataInitializationCompleted = true;
+                System.Diagnostics.Debug.WriteLine($"🎯 检测到页面重新导航，数据已存在，设置_originalFavoriteCount = {_originalFavoriteCount}");
+                
+                // 确保LoopingFavoriteApps也已准备好
+                if (ViewModel.LoopingFavoriteApps.Count == 0)
+                {
+                    AppService.Instance.UpdateLoopingCollection();
+                    System.Diagnostics.Debug.WriteLine("🎯 重新生成LoopingFavoriteApps集合");
+                }
             }
         }
 
@@ -106,7 +134,7 @@ namespace IntelliCoreToolbox.Views
         {
             if (FavoritesScrollViewer == null || _originalFavoriteCount == 0)
             {
-                System.Diagnostics.Debug.WriteLine($"CheckAndUpdateScrollState跳过: ScrollViewer={FavoritesScrollViewer != null}, Count={_originalFavoriteCount}");
+                System.Diagnostics.Debug.WriteLine($"🎯 CheckAndUpdateScrollState跳过: ScrollViewer={FavoritesScrollViewer != null}, Count={_originalFavoriteCount}");
                 return;
             }
 
@@ -116,7 +144,7 @@ namespace IntelliCoreToolbox.Views
             
             bool needsInfiniteScroll = FavoritesScrollViewer.ActualWidth < requiredWidth;
 
-            System.Diagnostics.Debug.WriteLine($"滚动状态检查: ViewerWidth={FavoritesScrollViewer.ActualWidth}, RequiredWidth={requiredWidth}, NeedsInfinite={needsInfiniteScroll}, Current={_isInfiniteScrollActive}");
+            System.Diagnostics.Debug.WriteLine($"🎯 滚动状态检查: ViewerWidth={FavoritesScrollViewer.ActualWidth}, RequiredWidth={requiredWidth}, NeedsInfinite={needsInfiniteScroll}, Current={_isInfiniteScrollActive}");
 
             if (needsInfiniteScroll != _isInfiniteScrollActive)
             {
@@ -124,42 +152,61 @@ namespace IntelliCoreToolbox.Views
             }
         }
 
-        // 🎯 处理FavoriteApps数据加载完成事件
+        // 🎯 处理FavoriteApps渐进式加载（允许用户看到应用逐个出现）
         private void FavoriteApps_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine($"FavoriteApps_CollectionChanged: Action={e.Action}, CurrentCount={ViewModel.FavoriteApps.Count}, OriginalCount={_originalFavoriteCount}");
+            System.Diagnostics.Debug.WriteLine($"🎯 FavoriteApps_CollectionChanged: Action={e.Action}, Count={ViewModel.FavoriteApps.Count}, DataInitCompleted={_isDataInitializationCompleted}");
             
-            // 只在首次数据加载时处理
-            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add && _originalFavoriteCount == 0 && ViewModel.FavoriteApps.Count > 0)
+            // 只处理添加操作，让用户看到渐进式加载
+            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add)
             {
-                _originalFavoriteCount = ViewModel.FavoriteApps.Count;
-                System.Diagnostics.Debug.WriteLine($"FavoriteApps数据加载完成: Count={_originalFavoriteCount}");
-                
-                // 延迟执行以确保UI布局完成
-                DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+                // 如果数据初始化已完成，可以安全地尝试更新滚动状态
+                if (_isDataInitializationCompleted && _originalFavoriteCount > 0)
                 {
-                    if (FavoritesScrollViewer != null && FavoritesScrollViewer.ActualWidth > 0)
+                    DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
                     {
-                        // 直接调用滚动状态检查逻辑
-                        const double itemWidth = 80;
-                        const double spacing = 20;
-                        double requiredWidth = (_originalFavoriteCount * itemWidth) + ((_originalFavoriteCount - 1) * spacing);
-                        
-                        bool needsInfiniteScroll = FavoritesScrollViewer.ActualWidth < requiredWidth;
-                        
-                        System.Diagnostics.Debug.WriteLine($"数据加载后滚动状态检查: ViewerWidth={FavoritesScrollViewer.ActualWidth}, RequiredWidth={requiredWidth}, NeedsInfinite={needsInfiniteScroll}");
-
-                        if (needsInfiniteScroll != _isInfiniteScrollActive)
-                        {
-                            UpdateScrollState(needsInfiniteScroll);
-                        }
-                    }
-                    else
-                    {
-                        System.Diagnostics.Debug.WriteLine($"ScrollViewer未准备就绪: ViewerNull={FavoritesScrollViewer == null}, ActualWidth={FavoritesScrollViewer?.ActualWidth ?? -1}");
-                    }
-                });
+                        CheckAndUpdateScrollState();
+                    });
+                }
+                // 如果数据初始化未完成，不进行滚动状态更新，避免竞态条件
             }
+        }
+
+        // 🎯 处理AppService数据初始化完成事件
+        private void OnDataInitializationCompleted(object sender, Services.DataInitializationCompletedEventArgs e)
+        {
+            // 确保在UI线程上执行
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                System.Diagnostics.Debug.WriteLine($"🎯 OnDataInitializationCompleted触发: Success={e.Success}, FavoriteApps={e.FavoriteAppsCount}, Message={e.Message}");
+                
+                if (e.Success && e.FavoriteAppsCount > 0)
+                {
+                    // 设置原始收藏数量（只设置一次，基于完整数据）
+                    _originalFavoriteCount = e.FavoriteAppsCount;
+                    _isDataInitializationCompleted = true; // 🎯 设置完成标志
+                    System.Diagnostics.Debug.WriteLine($"🎯 数据初始化完成，设置_originalFavoriteCount = {_originalFavoriteCount}");
+                    
+                    // 延迟执行UI初始化以确保UI布局完成
+                    DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+                    {
+                        if (FavoritesScrollViewer != null && FavoritesScrollViewer.ActualWidth > 0)
+                        {
+                            CheckAndUpdateScrollState();
+                            System.Diagnostics.Debug.WriteLine("🎯 基于完整数据完成了滚动状态初始化");
+                        }
+                        else
+                        {
+                            // ScrollViewer还未准备就绪，等待AppCenterPage_Loaded事件
+                            System.Diagnostics.Debug.WriteLine("🎯 ScrollViewer未准备就绪，将在页面加载完成后初始化");
+                        }
+                    });
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"🎯 数据初始化失败或无数据: Success={e.Success}, Count={e.FavoriteAppsCount}");
+                }
+            });
         }
 
         private void AppCenterPage_SizeChanged(object sender, SizeChangedEventArgs e)

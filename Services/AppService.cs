@@ -42,6 +42,16 @@ namespace IntelliCoreToolbox.Services
         public ObservableCollection<ToolboxItem> Apps { get; set; } = new ObservableCollection<ToolboxItem>();
     }
 
+    // 🎯 数据初始化完成事件参数
+    public class DataInitializationCompletedEventArgs : EventArgs
+    {
+        public int FavoriteAppsCount { get; set; }
+        public int AllAppsCount { get; set; }
+        public int CollectionsCount { get; set; }
+        public bool Success { get; set; }
+        public string Message { get; set; } = "";
+    }
+
     // 🎯 核心数据服务：应用数据管理
     public class AppService : INotifyPropertyChanged
     {
@@ -58,6 +68,9 @@ namespace IntelliCoreToolbox.Services
         private readonly string _configDirectory;
         private readonly string _userAppsFilePath;
         private List<ToolboxItem> _userAddedApps;
+
+        // 🎯 数据初始化完成事件
+        public event EventHandler<DataInitializationCompletedEventArgs>? DataInitializationCompleted;
 
         // 单例模式实现
         public static AppService Instance
@@ -99,64 +112,100 @@ namespace IntelliCoreToolbox.Services
         {
             System.Diagnostics.Debug.WriteLine("🎯 AppService.InitializeData 开始");
             
-            // 初始化收藏应用 (从AppCenterViewModel迁移)
-            var favoriteAppsData = new[]
+            try
             {
-                new ToolboxItem { Name = "Visual Studio Code", Icon = "VS", Background = "LightBlue", Description = "代码编辑器", Path = "" },
-                new ToolboxItem { Name = "Notepad++", Icon = "N++", Background = "Orange", Description = "文本编辑器", Path = "" },
-                new ToolboxItem { Name = "Git", Icon = "Git", Background = "Green", Description = "版本控制", Path = "" },
-                new ToolboxItem { Name = "Discord", Icon = "DC", Background = "Purple", Description = "聊天工具", Path = "" },
-                new ToolboxItem { Name = "Chrome", Icon = "Chr", Background = "Red", Description = "浏览器", Path = "" },
-                new ToolboxItem { Name = "Postman", Icon = "PM", Background = "DarkBlue", Description = "API测试", Path = "" },
-                new ToolboxItem { Name = "Docker", Icon = "Doc", Background = "Teal", Description = "容器平台", Path = "" },
-                new ToolboxItem { Name = "Figma", Icon = "Fig", Background = "Brown", Description = "设计工具", Path = "" },
-                new ToolboxItem { Name = "Unity", Icon = "Uni", Background = "DarkSlateBlue", Description = "游戏引擎", Path = "" },
-                new ToolboxItem { Name = "Blender", Icon = "Bln", Background = "DarkOrange", Description = "3D建模", Path = "" },
-                new ToolboxItem { Name = "Photoshop", Icon = "PS", Background = "DarkCyan", Description = "图像编辑", Path = "" },
-                new ToolboxItem { Name = "IntelliJ", Icon = "IJ", Background = "Maroon", Description = "Java IDE", Path = "" }
-            };
+                // 🎯 准备所有数据但不触发逐个添加事件
+                var favoriteAppsData = new[]
+                {
+                    new ToolboxItem { Name = "Visual Studio Code", Icon = "VS", Background = "LightBlue", Description = "代码编辑器", Path = "" },
+                    new ToolboxItem { Name = "Notepad++", Icon = "N++", Background = "Orange", Description = "文本编辑器", Path = "" },
+                    new ToolboxItem { Name = "Git", Icon = "Git", Background = "Green", Description = "版本控制", Path = "" },
+                    new ToolboxItem { Name = "Discord", Icon = "DC", Background = "Purple", Description = "聊天工具", Path = "" },
+                    new ToolboxItem { Name = "Chrome", Icon = "Chr", Background = "Red", Description = "浏览器", Path = "" },
+                    new ToolboxItem { Name = "Postman", Icon = "PM", Background = "DarkBlue", Description = "API测试", Path = "" },
+                    new ToolboxItem { Name = "Docker", Icon = "Doc", Background = "Teal", Description = "容器平台", Path = "" },
+                    new ToolboxItem { Name = "Figma", Icon = "Fig", Background = "Brown", Description = "设计工具", Path = "" },
+                    new ToolboxItem { Name = "Unity", Icon = "Uni", Background = "DarkSlateBlue", Description = "游戏引擎", Path = "" },
+                    new ToolboxItem { Name = "Blender", Icon = "Bln", Background = "DarkOrange", Description = "3D建模", Path = "" },
+                    new ToolboxItem { Name = "Photoshop", Icon = "PS", Background = "DarkCyan", Description = "图像编辑", Path = "" },
+                    new ToolboxItem { Name = "IntelliJ", Icon = "IJ", Background = "Maroon", Description = "Java IDE", Path = "" }
+                };
 
-            foreach (var item in favoriteAppsData)
-            {
-                FavoriteApps.Add(item);
+                var allAppsData = new[]
+                {
+                    new ToolboxItem { Name = "Visual Studio", Icon = "&#xE943;", Background = "Blue", Description = "IDE开发环境", Path = "" },
+                    new ToolboxItem { Name = "Notepad++", Icon = "&#xE8A5;", Background = "Orange", Description = "文本编辑器", Path = "" },
+                    new ToolboxItem { Name = "Chrome", Icon = "&#xE774;", Background = "Red", Description = "网页浏览器", Path = "" },
+                    new ToolboxItem { Name = "Git", Icon = "&#xE8AB;", Background = "Green", Description = "版本控制工具", Path = "" },
+                    new ToolboxItem { Name = "Discord", Icon = "&#xE8BD;", Background = "Purple", Description = "聊天通讯工具", Path = "" },
+                    new ToolboxItem { Name = "Postman", Icon = "&#xE968;", Background = "DarkBlue", Description = "API开发测试", Path = "" },
+                    new ToolboxItem { Name = "Docker", Icon = "&#xE8C7;", Background = "DarkCyan", Description = "容器化平台", Path = "" },
+                    new ToolboxItem { Name = "Slack", Icon = "&#xE8F2;", Background = "DarkMagenta", Description = "团队协作", Path = "" },
+                    new ToolboxItem { Name = "VS Code", Icon = "&#xE943;", Background = "LightBlue", Description = "轻量级编辑器", Path = "" },
+                    new ToolboxItem { Name = "Figma", Icon = "&#xE8EF;", Background = "Brown", Description = "UI设计工具", Path = "" },
+                    new ToolboxItem { Name = "Adobe XD", Icon = "&#xE8F0;", Background = "Crimson", Description = "原型设计", Path = "" },
+                    new ToolboxItem { Name = "Sketch", Icon = "&#xE8F1;", Background = "Gold", Description = "界面设计", Path = "" },
+                    new ToolboxItem { Name = "Notion", Icon = "&#xE8A5;", Background = "Gray", Description = "笔记协作", Path = "" }
+                };
+
+                // 🎯 批量添加数据以避免逐个触发CollectionChanged事件
+                System.Diagnostics.Debug.WriteLine("🎯 开始批量加载收藏应用数据...");
+                foreach (var item in favoriteAppsData)
+                {
+                    FavoriteApps.Add(item);
+                }
+                System.Diagnostics.Debug.WriteLine($"🎯 已批量添加 {favoriteAppsData.Length} 个收藏应用，当前数量: {FavoriteApps.Count}");
+
+                // 创建循环收藏列表
+                CreateLoopingFavorites();
+                System.Diagnostics.Debug.WriteLine($"🎯 已创建循环收藏列表，数量: {LoopingFavoriteApps.Count}");
+
+                // 批量添加全部应用
+                System.Diagnostics.Debug.WriteLine("🎯 开始批量加载全部应用数据...");
+                foreach (var item in allAppsData)
+                {
+                    AllApps.Add(item);
+                }
+                System.Diagnostics.Debug.WriteLine($"🎯 已批量添加 {allAppsData.Length} 个全部应用，当前数量: {AllApps.Count}");
+
+                // 初始化合集
+                InitializeCollections();
+                System.Diagnostics.Debug.WriteLine($"🎯 已初始化合集，数量: {Collections.Count}");
+
+                // 加载用户添加的应用
+                System.Diagnostics.Debug.WriteLine("🎯 开始加载用户应用...");
+                await LoadUserApps();
+                System.Diagnostics.Debug.WriteLine($"🎯 用户应用加载完成，最终AllApps数量: {AllApps.Count}");
+
+                // 🎯 所有数据加载完成，触发完成事件
+                var eventArgs = new DataInitializationCompletedEventArgs
+                {
+                    FavoriteAppsCount = FavoriteApps.Count,
+                    AllAppsCount = AllApps.Count,
+                    CollectionsCount = Collections.Count,
+                    Success = true,
+                    Message = "数据初始化成功完成"
+                };
+
+                System.Diagnostics.Debug.WriteLine($"🎯 数据初始化完成！准备触发完成事件 - 收藏应用:{eventArgs.FavoriteAppsCount}, 全部应用:{eventArgs.AllAppsCount}, 合集:{eventArgs.CollectionsCount}");
+                
+                // 直接在当前线程触发事件，让订阅者决定线程调度
+                DataInitializationCompleted?.Invoke(this, eventArgs);
+                System.Diagnostics.Debug.WriteLine("🎯 DataInitializationCompleted事件已触发！");
             }
-            System.Diagnostics.Debug.WriteLine($"🎯 已添加 {favoriteAppsData.Length} 个默认收藏应用，当前FavoriteApps数量: {FavoriteApps.Count}");
-
-            CreateLoopingFavorites();
-            System.Diagnostics.Debug.WriteLine($"🎯 已创建循环收藏列表，LoopingFavoriteApps数量: {LoopingFavoriteApps.Count}");
-
-            // 初始化全部应用 (从AppCenterViewModel迁移)
-            var allAppsData = new[]
+            catch (Exception ex)
             {
-                new ToolboxItem { Name = "Visual Studio", Icon = "&#xE943;", Background = "Blue", Description = "IDE开发环境", Path = "" },
-                new ToolboxItem { Name = "Notepad++", Icon = "&#xE8A5;", Background = "Orange", Description = "文本编辑器", Path = "" },
-                new ToolboxItem { Name = "Chrome", Icon = "&#xE774;", Background = "Red", Description = "网页浏览器", Path = "" },
-                new ToolboxItem { Name = "Git", Icon = "&#xE8AB;", Background = "Green", Description = "版本控制工具", Path = "" },
-                new ToolboxItem { Name = "Discord", Icon = "&#xE8BD;", Background = "Purple", Description = "聊天通讯工具", Path = "" },
-                new ToolboxItem { Name = "Postman", Icon = "&#xE968;", Background = "DarkBlue", Description = "API开发测试", Path = "" },
-                new ToolboxItem { Name = "Docker", Icon = "&#xE8C7;", Background = "DarkCyan", Description = "容器化平台", Path = "" },
-                new ToolboxItem { Name = "Slack", Icon = "&#xE8F2;", Background = "DarkMagenta", Description = "团队协作", Path = "" },
-                new ToolboxItem { Name = "VS Code", Icon = "&#xE943;", Background = "LightBlue", Description = "轻量级编辑器", Path = "" },
-                new ToolboxItem { Name = "Figma", Icon = "&#xE8EF;", Background = "Brown", Description = "UI设计工具", Path = "" },
-                new ToolboxItem { Name = "Adobe XD", Icon = "&#xE8F0;", Background = "Crimson", Description = "原型设计", Path = "" },
-                new ToolboxItem { Name = "Sketch", Icon = "&#xE8F1;", Background = "Gold", Description = "界面设计", Path = "" },
-                new ToolboxItem { Name = "Notion", Icon = "&#xE8A5;", Background = "Gray", Description = "笔记协作", Path = "" }
-            };
+                System.Diagnostics.Debug.WriteLine($"🎯 数据初始化失败: {ex.Message}");
+                
+                // 触发失败事件
+                var errorEventArgs = new DataInitializationCompletedEventArgs
+                {
+                    Success = false,
+                    Message = $"数据初始化失败: {ex.Message}"
+                };
 
-            foreach (var item in allAppsData)
-            {
-                AllApps.Add(item);
+                DataInitializationCompleted?.Invoke(this, errorEventArgs);
             }
-            System.Diagnostics.Debug.WriteLine($"🎯 已添加 {allAppsData.Length} 个默认全部应用，当前AllApps数量: {AllApps.Count}");
-
-            // 初始化合集 (从AppCenterViewModel迁移)
-            InitializeCollections();
-            System.Diagnostics.Debug.WriteLine($"🎯 已初始化合集，Collections数量: {Collections.Count}");
-
-            // 🎯 加载用户添加的应用
-            System.Diagnostics.Debug.WriteLine("🎯 准备加载用户添加的应用...");
-            await LoadUserApps();
-            System.Diagnostics.Debug.WriteLine($"🎯 用户应用加载完成，最终AllApps数量: {AllApps.Count}");
         }
 
         private void InitializeCollections()
@@ -400,6 +449,12 @@ namespace IntelliCoreToolbox.Services
             OnPropertyChanged(nameof(LoopingFavoriteApps));
         }
 
+        // 🎯 更新循环收藏列表（页面重新导航时使用）
+        public void UpdateLoopingCollection()
+        {
+            CreateLoopingFavorites();
+        }
+
         // 🎯 数据持久化方法
         
         /// <summary>
@@ -459,27 +514,27 @@ namespace IntelliCoreToolbox.Services
         {
             try
             {
-                Console.WriteLine($"🎯 LoadUserApps开始: 文件路径={_userAppsFilePath}");
+                
                 Console.WriteLine($"🎯 文件存在检查: {File.Exists(_userAppsFilePath)}");
                 
                 if (!File.Exists(_userAppsFilePath))
                 {
-                    Console.WriteLine("用户应用配置文件不存在，跳过加载");
+                    
                     return;
                 }
 
                 var jsonString = File.ReadAllText(_userAppsFilePath);
-                Console.WriteLine($"🎯 读取到JSON内容长度: {jsonString.Length}");
+                
                 Console.WriteLine($"🎯 JSON内容预览: {(jsonString.Length > 100 ? jsonString.Substring(0, 100) + "..." : jsonString)}");
                 
                 var config = JsonSerializer.Deserialize<UserAppConfig>(jsonString);
-                Console.WriteLine($"🎯 反序列化结果: config={config != null}, UserApps={config?.UserApps?.Count ?? 0}");
+                
 
                 if (config?.UserApps != null)
                 {
                     _userAddedApps.Clear();
                     _userAddedApps.AddRange(config.UserApps);
-                    Console.WriteLine($"🎯 已清理并添加{config.UserApps.Count}个用户应用到_userAddedApps");
+                    
 
                     // 🎯 将用户应用添加到AllApps集合中，使用从Path提取的文件名作为显示名称
                     int addedToAllAppsCount = 0;
@@ -518,7 +573,7 @@ namespace IntelliCoreToolbox.Services
                             }
                             catch (Exception pathEx)
                             {
-                                Console.WriteLine($"⚠️ 文件名提取失败，使用原始名称: {pathEx.Message}");
+                                
                                 displayName = app.Name;
                             }
                             
@@ -534,20 +589,33 @@ namespace IntelliCoreToolbox.Services
                             AllApps.Add(newApp);
                             addedToAllAppsCount++;
                             
-                            Console.WriteLine($"🎯 用户应用已添加到AllApps: Name={displayName}, Path={app.Path}");
+                            
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"❌ 处理用户应用失败: Name={app.Name}, Path={app.Path}, Error={ex.Message}");
-                            // 继续处理下一个应用，不中断整个过程
+                            
+                            // 创建备份应用项，确保不会因为单个应用失败而中断整个加载
+                            try 
+                            {
+                                var fallbackApp = new ToolboxItem
+                                {
+                                    Name = app?.Name ?? "应用",
+                                    Icon = "&#xE8FC;",
+                                    Background = "Gray",
+                                    Description = "用户添加的应用",
+                                    Path = app?.Path ?? ""
+                                };
+                                AllApps.Add(fallbackApp);
+                                addedToAllAppsCount++;
+                            }
+                            catch (Exception)
+                            {
+                                // 如果连备份都失败，继续处理下一个应用
+                            }
                         }
                     }
 
-                    Console.WriteLine($"🎯 LoadUserApps完成: 总共添加{addedToAllAppsCount}个用户应用到AllApps");
-                    Console.WriteLine($"🎯 当前AllApps总数: {AllApps.Count}");
-                    Console.WriteLine($"🎯 当前FavoriteApps总数: {FavoriteApps.Count}");
-                    
-                    // 触发属性更改通知
+                    // 触发属性更改通知，通知UI刷新AllApps显示
                     OnPropertyChanged(nameof(AllApps));
                 }
             }

@@ -192,7 +192,7 @@ namespace IntelliCoreToolbox.Views
         {
             var gridView = this.CollectionAppsGridView;
             if (gridView == null) return;
-
+            
             // 减去左边距20px，右边距现在是0
             double availableWidth = newSize.Width - 20; 
             
@@ -217,28 +217,28 @@ namespace IntelliCoreToolbox.Views
                 if (container != null)
                 {
                     if (container.ContentTemplateRoot is Border border)
+                {
+                    border.Width = itemWidth;
+                    border.Height = itemHeight;
+                    
+                    if (border.Child is StackPanel stackPanel)
                     {
-                        border.Width = itemWidth;
-                        border.Height = itemHeight;
-
-                        if (border.Child is StackPanel stackPanel)
+                        if (stackPanel.Children.Count > 0 && stackPanel.Children[0] is Border iconBorder)
                         {
-                            if (stackPanel.Children.Count > 0 && stackPanel.Children[0] is Border iconBorder)
-                            {
-                                double iconSize = 64 * scaleFactor;
+                            double iconSize = 64 * scaleFactor;
                                 iconSize = Math.Max(48, Math.Min(80, iconSize));
-                                iconBorder.Width = iconSize;
-                                iconBorder.Height = iconSize;
-                                
-                                if (iconBorder.Child is FontIcon fontIcon)
-                                {
-                                    fontIcon.FontSize = iconSize * 0.5;
-                                }
-                            }
+                            iconBorder.Width = iconSize;
+                            iconBorder.Height = iconSize;
                             
-                            if (stackPanel.Children.Count > 1 && stackPanel.Children[1] is TextBlock textBlock)
+                            if (iconBorder.Child is FontIcon fontIcon)
                             {
-                                textBlock.FontSize = Math.Max(10, 12 * scaleFactor);
+                                    fontIcon.FontSize = iconSize * 0.5;
+                            }
+                        }
+                        
+                        if (stackPanel.Children.Count > 1 && stackPanel.Children[1] is TextBlock textBlock)
+                        {
+                            textBlock.FontSize = Math.Max(10, 12 * scaleFactor);
                             }
                         }
                     }

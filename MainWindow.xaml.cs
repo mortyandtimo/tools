@@ -144,6 +144,9 @@ namespace IntelliCoreToolbox
             // 🔥 Step 5: 定义可拖拽区域 - 在窗口激活后执行
             this.Activated += MainWindow_Activated;
             
+            // 🔥 Step 6: 监听窗口尺寸变化，动态调整拖拽区域
+            this.SizeChanged += MainWindow_SizeChanged;
+            
             // 添加导航完成事件处理，确保新页面也应用主题
             ContentFrame.Navigated += ContentFrame_Navigated;
             
@@ -165,6 +168,12 @@ namespace IntelliCoreToolbox
             }
         }
 
+        private void MainWindow_SizeChanged(object sender, Microsoft.UI.Xaml.WindowSizeChangedEventArgs e)
+        {
+            // 当窗口尺寸变化时，重新设置拖拽区域以适应新的窗口宽度
+            SetupDraggableRegion();
+        }
+
 
 
         private void SetupDraggableRegion()
@@ -183,15 +192,43 @@ namespace IntelliCoreToolbox
                 // 左侧内容宽度（软件名 + 版本 + 主题按钮）约160像素
                 int leftContentWidth = 160;
                 
+                // 计算可拖拽区域的宽度
+                int draggableWidth = clientSize.Width - leftContentWidth - closeButtonWidth;
+                
+                // 确保拖拽区域宽度为正数，避免窗口过小时出现问题
+                if (draggableWidth > 0)
+                {
                 // 定义可拖拽区域：左侧内容后面到关闭按钮前面的区域
                 var dragRect = new Windows.Graphics.RectInt32(
-                    leftContentWidth,                           // X: 从左侧内容后开始
-                    0,                                          // Y: 从顶部开始  
-                    clientSize.Width - leftContentWidth - closeButtonWidth, // Width: 中间空白区域
-                    titleBarHeight                              // Height: 标题栏高度
+                        leftContentWidth,     // X: 从左侧内容后开始
+                        0,                    // Y: 从顶部开始  
+                        draggableWidth,       // Width: 中间空白区域
+                        titleBarHeight        // Height: 标题栏高度
                 );
                 
+                    try
+                    {
                 _appWindow.TitleBar.SetDragRectangles(new[] { dragRect });
+                        System.Diagnostics.Debug.WriteLine($"拖拽区域已更新: X={leftContentWidth}, Y=0, Width={draggableWidth}, Height={titleBarHeight}");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"设置拖拽区域失败: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    // 窗口太小时，清除拖拽区域设置
+                    try
+                    {
+                        _appWindow.TitleBar.SetDragRectangles(new Windows.Graphics.RectInt32[0]);
+                        System.Diagnostics.Debug.WriteLine("窗口过小，已清除拖拽区域");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"清除拖拽区域失败: {ex.Message}");
+                    }
+                }
             }
         }
 
@@ -572,6 +609,6 @@ namespace IntelliCoreToolbox
             };
 
             await dialog.ShowAsync();
-        }
+         }
     }
 }
