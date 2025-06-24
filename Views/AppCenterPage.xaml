@@ -32,115 +32,35 @@
                           Foreground="DarkSlateGray"
                           Margin="16,12,16,8"/>
                 
-                <!-- 水平滚动收藏列表 -->
-                <ScrollViewer Grid.Row="1"
+                <!-- 🎯 水平滚动收藏列表 (数据绑定) -->
+                <ScrollViewer x:Name="FavoritesScrollViewer"
+                             Grid.Row="1"
                              HorizontalScrollBarVisibility="Hidden"
                              VerticalScrollBarVisibility="Hidden"
                              HorizontalScrollMode="Auto"
                              VerticalScrollMode="Disabled"
                              ZoomMode="Disabled"
                              Margin="16,0,16,12">
-                    <StackPanel Orientation="Horizontal" 
-                               Spacing="20"
-                               VerticalAlignment="Center"
-                               HorizontalAlignment="Center">
-                        <!-- 临时占位符：收藏应用项目 -->
-                        <Border Width="80" Height="80" 
-                               Background="LightBlue" 
-                               CornerRadius="16"
-                               ToolTipService.ToolTip="Visual Studio Code">
-                            <TextBlock Text="VS" 
-                                     HorizontalAlignment="Center" 
-                                     VerticalAlignment="Center"
-                                     FontWeight="Bold"
-                                     FontSize="14"
-                                     Foreground="White"/>
-                        </Border>
-                        
-                        <Border Width="80" Height="80" 
-                               Background="Orange" 
-                               CornerRadius="16"
-                               ToolTipService.ToolTip="Notepad++">
-                            <TextBlock Text="N++" 
-                                     HorizontalAlignment="Center" 
-                                     VerticalAlignment="Center"
-                                     FontWeight="Bold"
-                                     FontSize="12"
-                                     Foreground="White"/>
-                        </Border>
-                        
-                        <Border Width="80" Height="80" 
-                               Background="Green" 
-                               CornerRadius="16"
-                               ToolTipService.ToolTip="Git">
-                            <TextBlock Text="Git" 
-                                     HorizontalAlignment="Center" 
-                                     VerticalAlignment="Center"
-                                     FontWeight="Bold"
-                                     FontSize="14"
-                                     Foreground="White"/>
-                        </Border>
-                        
-                        <Border Width="80" Height="80" 
-                               Background="Purple" 
-                               CornerRadius="16"
-                               ToolTipService.ToolTip="Discord">
-                            <TextBlock Text="DC" 
-                                     HorizontalAlignment="Center" 
-                                     VerticalAlignment="Center"
-                                     FontWeight="Bold"
-                                     FontSize="14"
-                                     Foreground="White"/>
-                        </Border>
-                        
-                        <Border Width="80" Height="80" 
-                               Background="Red" 
-                               CornerRadius="16"
-                               ToolTipService.ToolTip="Chrome">
-                            <TextBlock Text="Chr" 
-                                     HorizontalAlignment="Center" 
-                                     VerticalAlignment="Center"
-                                     FontWeight="Bold"
-                                     FontSize="12"
-                                     Foreground="White"/>
-                        </Border>
-                        
-                        <Border Width="80" Height="80" 
-                               Background="DarkBlue" 
-                               CornerRadius="16"
-                               ToolTipService.ToolTip="Postman">
-                            <TextBlock Text="PM" 
-                                     HorizontalAlignment="Center" 
-                                     VerticalAlignment="Center"
-                                     FontWeight="Bold"
-                                     FontSize="14"
-                                     Foreground="White"/>
-                        </Border>
-                        
-                        <Border Width="80" Height="80" 
-                               Background="Teal" 
-                               CornerRadius="16"
-                               ToolTipService.ToolTip="Docker">
-                            <TextBlock Text="Doc" 
-                                     HorizontalAlignment="Center" 
-                                     VerticalAlignment="Center"
-                                     FontWeight="Bold"
-                                     FontSize="12"
-                                     Foreground="White"/>
-                        </Border>
-                        
-                        <Border Width="80" Height="80" 
-                               Background="Brown" 
-                               CornerRadius="16"
-                               ToolTipService.ToolTip="Figma">
-                            <TextBlock Text="Fig" 
-                                     HorizontalAlignment="Center" 
-                                     VerticalAlignment="Center"
-                                     FontWeight="Bold"
-                                     FontSize="12"
-                                     Foreground="White"/>
-                        </Border>
-                    </StackPanel>
+                    <ItemsRepeater ItemsSource="{x:Bind ViewModel.FavoriteApps, Mode=OneWay}">
+                        <ItemsRepeater.Layout>
+                            <StackLayout Orientation="Horizontal" Spacing="20"/>
+                        </ItemsRepeater.Layout>
+                        <ItemsRepeater.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="80" Height="80" 
+                                       Background="{Binding Background}" 
+                                       CornerRadius="16"
+                                       ToolTipService.ToolTip="{Binding Name}">
+                                    <TextBlock Text="{Binding Icon}" 
+                                             HorizontalAlignment="Center" 
+                                             VerticalAlignment="Center"
+                                             FontWeight="Bold"
+                                             FontSize="12"
+                                             Foreground="White"/>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsRepeater.ItemTemplate>
+                    </ItemsRepeater>
                 </ScrollViewer>
             </Grid>
         </Border>
@@ -183,16 +103,19 @@
                             Height="32"/>
                 </Grid>
                 
-                <!-- 应用网格视图 -->
+                <!-- 🎯 应用网格视图 (数据绑定 + 响应式布局) -->
                 <ScrollViewer Grid.Row="1" 
                              VerticalScrollBarVisibility="Auto"
                              HorizontalScrollBarVisibility="Disabled">
                     <GridView x:Name="AppsGridView"
+                             ItemsSource="{x:Bind ViewModel.AllApps, Mode=OneWay}"
                              Margin="16,0,1,16"
-                             SelectionMode="Single"
+                             SelectionMode="None"
                              HorizontalAlignment="Stretch"
                              VerticalAlignment="Top"
-                             SizeChanged="AppsGridView_SizeChanged">
+                             SizeChanged="AppsGridView_SizeChanged"
+                             ItemClick="AppsGridView_ItemClick"
+                             IsItemClickEnabled="True">
                         <GridView.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <ItemsWrapGrid x:Name="AppsWrapGrid" 
@@ -202,162 +125,41 @@
                             </ItemsPanelTemplate>
                         </GridView.ItemsPanel>
                         
-                        <!-- 临时占位符：应用项目 -->
-                        <GridViewItem>
-                            <Border Width="120" Height="140" 
-                                   Background="White" 
-                                   CornerRadius="8"
-                                   BorderBrush="#E0E0E0"
-                                   BorderThickness="1"
-                                   Padding="8">
-                                <StackPanel>
-                                    <Border Width="64" Height="64" 
-                                           Background="Blue" 
-                                           CornerRadius="8"
-                                           Margin="0,0,0,8">
-                                        <FontIcon FontFamily="Segoe MDL2 Assets"
-                                                 Glyph="&#xE943;"
-                                                 FontSize="32"
-                                                 Foreground="White"/>
-                                    </Border>
-                                    <TextBlock Text="Visual Studio"
-                                             TextAlignment="Center"
-                                             FontSize="12"
-                                             TextWrapping="Wrap"
-                                             Foreground="Black"/>
-                                </StackPanel>
-                            </Border>
-                        </GridViewItem>
-                        
-                        <GridViewItem>
-                            <Border Width="120" Height="140" 
-                                   Background="White" 
-                                   CornerRadius="8"
-                                   BorderBrush="#E0E0E0"
-                                   BorderThickness="1"
-                                   Padding="8">
-                                <StackPanel>
-                                    <Border Width="64" Height="64" 
-                                           Background="Orange" 
-                                           CornerRadius="8"
-                                           Margin="0,0,0,8">
-                                        <FontIcon FontFamily="Segoe MDL2 Assets"
-                                                 Glyph="&#xE8A5;"
-                                                 FontSize="32"
-                                                 Foreground="White"/>
-                                    </Border>
-                                    <TextBlock Text="Notepad++"
-                                             TextAlignment="Center"
-                                             FontSize="12"
-                                             TextWrapping="Wrap"
-                                             Foreground="Black"/>
-                                </StackPanel>
-                            </Border>
-                        </GridViewItem>
-                        
-                        <GridViewItem>
-                            <Border Width="120" Height="140" 
-                                   Background="White" 
-                                   CornerRadius="8"
-                                   BorderBrush="#E0E0E0"
-                                   BorderThickness="1"
-                                   Padding="8">
-                                <StackPanel>
-                                    <Border Width="64" Height="64" 
-                                           Background="Red" 
-                                           CornerRadius="8"
-                                           Margin="0,0,0,8">
-                                        <FontIcon FontFamily="Segoe MDL2 Assets"
-                                                 Glyph="&#xE774;"
-                                                 FontSize="32"
-                                                 Foreground="White"/>
-                                    </Border>
-                                    <TextBlock Text="Chrome"
-                                             TextAlignment="Center"
-                                             FontSize="12"
-                                             TextWrapping="Wrap"
-                                             Foreground="Black"/>
-                                </StackPanel>
-                            </Border>
-                        </GridViewItem>
-                        
-                        <GridViewItem>
-                            <Border Width="120" Height="140" 
-                                   Background="White" 
-                                   CornerRadius="8"
-                                   BorderBrush="#E0E0E0"
-                                   BorderThickness="1"
-                                   Padding="8">
-                                <StackPanel>
-                                    <Border Width="64" Height="64" 
-                                           Background="Green" 
-                                           CornerRadius="8"
-                                           Margin="0,0,0,8">
-                                        <FontIcon FontFamily="Segoe MDL2 Assets"
-                                                 Glyph="&#xE8AB;"
-                                                 FontSize="32"
-                                                 Foreground="White"/>
-                                    </Border>
-                                    <TextBlock Text="Git"
-                                             TextAlignment="Center"
-                                             FontSize="12"
-                                             TextWrapping="Wrap"
-                                             Foreground="Black"/>
-                                </StackPanel>
-                            </Border>
-                        </GridViewItem>
-                        
-                        <GridViewItem>
-                            <Border Width="120" Height="140" 
-                                   Background="White" 
-                                   CornerRadius="8"
-                                   BorderBrush="#E0E0E0"
-                                   BorderThickness="1"
-                                   Padding="8">
-                                <StackPanel>
-                                    <Border Width="64" Height="64" 
-                                           Background="Purple" 
-                                           CornerRadius="8"
-                                           Margin="0,0,0,8">
-                                        <FontIcon FontFamily="Segoe MDL2 Assets"
-                                                 Glyph="&#xE8BD;"
-                                                 FontSize="32"
-                                                 Foreground="White"/>
-                                    </Border>
-                                    <TextBlock Text="Discord"
-                                             TextAlignment="Center"
-                                             FontSize="12"
-                                             TextWrapping="Wrap"
-                                             Foreground="Black"/>
-                                </StackPanel>
-                            </Border>
-                        </GridViewItem>
-                        
-                        <GridViewItem>
-                            <Border Width="120" Height="140" 
-                                   Background="White" 
-                                   CornerRadius="8"
-                                   BorderBrush="#E0E0E0"
-                                   BorderThickness="1"
-                                   Padding="8">
-                                <StackPanel>
-                                    <Border Width="64" Height="64" 
-                                           Background="DarkBlue" 
-                                           CornerRadius="8"
-                                           Margin="0,0,0,8">
-                                        <FontIcon FontFamily="Segoe MDL2 Assets"
-                                                 Glyph="&#xE968;"
-                                                 FontSize="32"
-                                                 Foreground="White"/>
-                                    </Border>
-                                    <TextBlock Text="Postman"
-                                             TextAlignment="Center"
-                                             FontSize="12"
-                                             TextWrapping="Wrap"
-                                             Foreground="Black"/>
-                                </StackPanel>
-                            </Border>
-                        </GridViewItem>
+                        <!-- 🎯 应用项目数据模板 -->
+                        <GridView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="120" Height="140" 
+                                       Background="White" 
+                                       CornerRadius="8"
+                                       BorderBrush="#E0E0E0"
+                                       BorderThickness="1"
+                                       Padding="8">
+                                    <!-- 为整个Border添加工具提示 -->
+                                    <ToolTipService.ToolTip>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding Description}" FontSize="11"/>
+                                        </StackPanel>
+                                    </ToolTipService.ToolTip>
+                                    <StackPanel>
+                                        <Border Width="64" Height="64" 
+                                               Background="{Binding Background}" 
+                                               CornerRadius="8"
+                                               Margin="0,0,0,8">
+                                            <FontIcon FontFamily="Segoe MDL2 Assets"
+                                                     Glyph="{Binding Icon}"
+                                                     FontSize="32"
+                                                     Foreground="White"/>
+                                        </Border>
+                                        <TextBlock Text="{Binding Name}"
+                                                 TextAlignment="Center"
+                                                 FontSize="12"
+                                                 TextWrapping="Wrap"
+                                                 Foreground="Black"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </GridView.ItemTemplate>
                     </GridView>
                 </ScrollViewer>
             </Grid>
@@ -381,122 +183,39 @@
                           Margin="12,8,12,8"
                           Foreground="DarkSlateGray"/>
                 
-                <!-- 合集列表 -->
+                <!-- 🎯 合集列表 (数据绑定 + 弹窗交互) -->
                 <ListView x:Name="CollectionsListView"
+                         ItemsSource="{x:Bind ViewModel.Collections, Mode=OneWay}"
                          Grid.Row="1"
                          Margin="8,0,8,16"
-                         SelectionMode="Single">
+                         SelectionMode="None"
+                         ItemClick="CollectionsListView_ItemClick"
+                         IsItemClickEnabled="True">
                     
-                    <!-- 临时占位符：合集项目 -->
-                    <ListViewItem>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Border Width="24" Height="24" 
-                                   Background="CornflowerBlue" 
-                                   CornerRadius="4">
-                                <TextBlock Text="🎨" 
-                                         HorizontalAlignment="Center" 
-                                         VerticalAlignment="Center"
-                                         FontSize="10"/>
-                            </Border>
-                            <StackPanel>
-                                <TextBlock Text="设计工具"
-                                         FontSize="12"
-                                         FontWeight="SemiBold"
-                                         Foreground="Black"/>
-                                <TextBlock Text="8 个应用"
-                                         FontSize="10"
-                                         Foreground="Gray"/>
+                    <!-- 🎯 合集项目数据模板 -->
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Border Width="24" Height="24" 
+                                       Background="{Binding Background}" 
+                                       CornerRadius="4">
+                                    <TextBlock Text="{Binding Icon}" 
+                                             HorizontalAlignment="Center" 
+                                             VerticalAlignment="Center"
+                                             FontSize="10"/>
+                                </Border>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Name}"
+                                             FontSize="12"
+                                             FontWeight="SemiBold"
+                                             Foreground="Black"/>
+                                    <TextBlock Text="{Binding AppCount}"
+                                             FontSize="10"
+                                             Foreground="Gray"/>
+                                </StackPanel>
                             </StackPanel>
-                        </StackPanel>
-                    </ListViewItem>
-                    
-                    <ListViewItem>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Border Width="24" Height="24" 
-                                   Background="ForestGreen" 
-                                   CornerRadius="4">
-                                <TextBlock Text="💻" 
-                                         HorizontalAlignment="Center" 
-                                         VerticalAlignment="Center"
-                                         FontSize="10"/>
-                            </Border>
-                            <StackPanel>
-                                <TextBlock Text="开发工具"
-                                         FontSize="12"
-                                         FontWeight="SemiBold"
-                                         Foreground="Black"/>
-                                <TextBlock Text="12 个应用"
-                                         FontSize="10"
-                                         Foreground="Gray"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </ListViewItem>
-                    
-                    <ListViewItem>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Border Width="24" Height="24" 
-                                   Background="Crimson" 
-                                   CornerRadius="4">
-                                <TextBlock Text="🎮" 
-                                         HorizontalAlignment="Center" 
-                                         VerticalAlignment="Center"
-                                         FontSize="10"/>
-                            </Border>
-                            <StackPanel>
-                                <TextBlock Text="游戏娱乐"
-                                         FontSize="12"
-                                         FontWeight="SemiBold"
-                                         Foreground="Black"/>
-                                <TextBlock Text="5 个应用"
-                                         FontSize="10"
-                                         Foreground="Gray"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </ListViewItem>
-                    
-                    <ListViewItem>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Border Width="24" Height="24" 
-                                   Background="DarkOrange" 
-                                   CornerRadius="4">
-                                <TextBlock Text="🔧" 
-                                         HorizontalAlignment="Center" 
-                                         VerticalAlignment="Center"
-                                         FontSize="10"/>
-                            </Border>
-                            <StackPanel>
-                                <TextBlock Text="系统工具"
-                                         FontSize="12"
-                                         FontWeight="SemiBold"
-                                         Foreground="Black"/>
-                                <TextBlock Text="15 个应用"
-                                         FontSize="10"
-                                         Foreground="Gray"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </ListViewItem>
-                    
-                    <ListViewItem>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Border Width="24" Height="24" 
-                                   Background="MediumPurple" 
-                                   CornerRadius="4">
-                                <TextBlock Text="📊" 
-                                         HorizontalAlignment="Center" 
-                                         VerticalAlignment="Center"
-                                         FontSize="10"/>
-                            </Border>
-                            <StackPanel>
-                                <TextBlock Text="办公软件"
-                                         FontSize="12"
-                                         FontWeight="SemiBold"
-                                         Foreground="Black"/>
-                                <TextBlock Text="6 个应用"
-                                         FontSize="10"
-                                         Foreground="Gray"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </ListViewItem>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
                 </ListView>
             </Grid>
         </Grid>
